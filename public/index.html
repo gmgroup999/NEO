@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEO — AI Brain</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&family=Noto+Sans+Thai:wght@300;400;500;600&display=swap');
 
@@ -365,6 +366,21 @@ body::after {
   border: 1px solid rgba(0,229,255,0.14);
   border-top-right-radius: 3px;
 }
+
+.markdown-body p { margin: 0 0 8px; }
+.markdown-body p:last-child { margin-bottom: 0; }
+.markdown-body ul, .markdown-body ol { margin: 4px 0 8px 20px; }
+.markdown-body li { margin: 2px 0; }
+.markdown-body code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+.markdown-body pre { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow-x: auto; margin: 8px 0; }
+.markdown-body pre code { background: none; padding: 0; font-size: 12px; }
+.markdown-body a { color: var(--accent); text-decoration: underline; }
+.markdown-body a:hover { opacity: 0.8; }
+.markdown-body strong { color: #fff; }
+.markdown-body h1,.markdown-body h2,.markdown-body h3 { margin: 8px 0 4px; color: #fff; }
+.markdown-body table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+.markdown-body th, .markdown-body td { border: 1px solid var(--border2); padding: 4px 10px; }
+.markdown-body th { background: var(--s3); }
 
 /* Image bubble */
 .img-bubble {
@@ -925,6 +941,13 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
+function renderMarkdown(text) {
+  marked.setOptions({ breaks: true, gfm: true })
+  const html = marked.parse(text)
+  // Open all links in new tab
+  return html.replace(/<a href=/g, '<a target="_blank" rel="noopener" href=')
+}
+
 function addMsg(html) {
   const el = document.createElement('div')
   el.innerHTML = html
@@ -952,7 +975,7 @@ function renderTextResponse(data) {
     <div class="msg neo">
       <div class="avatar neo">N</div>
       <div class="msg-body">
-        <div class="bubble">${escHtml(data.content).replace(/\n/g,'<br>')}</div>
+        <div class="bubble markdown-body">${renderMarkdown(data.content)}</div>
         <div class="msg-meta">
           <span class="model-badge ${badge.cls}">${badge.label}${routeTag}</span>
           <span class="meta-cost">${cost} · ⚡${data.latencyMs}ms</span>
