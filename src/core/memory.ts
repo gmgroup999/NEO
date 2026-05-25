@@ -83,59 +83,66 @@ export async function saveMemory(memory: {
   return result.rows[0].id
 }
 
-// ─── EXTRACT — auto-extract memory จาก conversation (background) ───
+// ─── EXTRACT — AI-powered memory extraction จาก conversation ───
 export async function extractMemoriesFromConversation(
   userMessage: string,
   aiResponse: string,
   sessionId: string
 ): Promise<void> {
-  const memories: Array<{
-    scope: 'jack' | 'project' | 'global'
-    category: 'rule' | 'decision' | 'fact' | 'preference' | 'insight' | 'context'
-    content: string
-    importance: number
-    projectId?: string
-  }> = []
-
+  // Explicit triggers — save immediately with high importance
   const rememberTriggers = ['จำไว้ด้วย', 'จำไว้นะ', 'remember this', 'note:', 'สำคัญ:']
-  const hasRememberTrigger = rememberTriggers.some(t => userMessage.toLowerCase().includes(t))
-
-  if (hasRememberTrigger) {
-    memories.push({
-      scope: 'jack',
-      category: 'fact',
-      content: userMessage.replace(/จำไว้ด้วย|จำไว้นะ|remember this|note:|สำคัญ:/gi, '').trim(),
-      importance: 8,
-    })
+  if (rememberTriggers.some(t => userMessage.toLowerCase().includes(t))) {
+    const content = userMessage.replace(/จำไว้ด้วย|จำไว้นะ|remember this|note:|สำคัญ:/gi, '').trim()
+    await saveMemory({ scope: 'jack', category: 'fact', content, importance: 9, source: 'manual', sessionId })
+      .catch(console.error)
   }
 
-  const projectMentions = detectProjectMentions(userMessage)
+  // Skip AI extraction for very short greetings
+  if (userMessage.trim().length < 10) return
 
-  if (userMessage.includes('ตัดสินใจ') || userMessage.includes('เลือก') || userMessage.includes('จะใช้')) {
-    memories.push({
-      scope: projectMentions[0] ? 'project' : 'jack',
-      category: 'decision',
-      projectId: projectMentions[0],
-      content: `[DECISION] ${userMessage}`,
-      importance: 7,
-    })
-  }
+  try {
+    const { callClaude } = await import('../ai/claude')
 
-  if (
-    userMessage.includes('ห้าม') || userMessage.includes('ต้องเสมอ') ||
-    userMessage.includes('never') || userMessage.includes('always')
-  ) {
-    memories.push({
-      scope: projectMentions[0] ? 'project' : 'jack',
-      category: 'rule',
-      projectId: projectMentions[0],
-      content: userMessage,
-      importance: 9,
-    })
-  }
+    const extractPrompt = `Analyze this conversation between Jack (Thai developer/entrepreneur) and NEO (his AI brain).
+Extract 0-3 memories worth remembering about Jack, his projects, decisions, or preferences.
 
-  for (const mem of memories) {
-    await saveMemory({ ...mem, source: 'extracted', sessionId }).catch(console.error)
+User: ${userMessage.slice(0, 600)}
+NEO: ${aiResponse.slice(0, 400)}
+
+Return ONLY a JSON array, no markdown, no explanation:
+[{"scope":"jack"|"project"|"global","category":"fact"|"preference"|"decision"|"rule"|"insight","content":"specific memory in Thai or English (max 120 chars)","importance":1-10,"projectId":"joyride"|"boonma"|"sabaidee"|"pawfect"|"neo"|null}]
+
+Rules:
+- Only extract specific, actionable facts. Skip vague or obvious things.
+- importance 8-10: critical rules, strong preferences, major decisions
+- importance 5-7: useful project/tech context
+- importance 1-4: minor facts (skip these)
+- Return [] if nothing worth remembering (greeting, simple question, etc.)`
+
+    const result = await callClaude(
+      extractPrompt,
+      'You extract structured memories from conversations. Return only valid JSON arrays, nothing else.',
+      'claude-haiku-4-5-20251001'
+    )
+
+    const jsonMatch = result.content.match(/\[[\s\S]*?\]/)
+    if (!jsonMatch) return
+
+    const memories = JSON.parse(jsonMatch[0]) as Array<{
+      scope: 'jack' | 'project' | 'global'
+      category: 'rule' | 'decision' | 'fact' | 'preference' | 'insight' | 'context'
+      content: string
+      importance: number
+      projectId?: string
+    }>
+
+    for (const mem of memories) {
+      if (mem.content && mem.importance >= 5) {
+        await saveMemory({ ...mem, source: 'ai-extracted', sessionId }).catch(console.error)
+      }
+    }
+  } catch (err) {
+    console.error('AI extraction error:', err)
   }
 }
 
