@@ -43,7 +43,7 @@ export function extractImagePrompt(message: string): string {
 
 export async function generateImage(prompt: string): Promise<ImageResult> {
   const response = await openai.images.generate({
-    model: 'dall-e-3',
+    model: 'gpt-image-1',
     prompt,
     n: 1,
     size: '1024x1024',
@@ -51,11 +51,15 @@ export async function generateImage(prompt: string): Promise<ImageResult> {
   })
 
   const image = response.data?.[0]
-  if (!image) throw new Error('No image returned from DALL-E')
+  if (!image) throw new Error('No image returned')
+
+  // gpt-image-1 returns b64_json by default, dall-e-3 returns url
+  const url = image.url ?? (image.b64_json ? `data:image/png;base64,${image.b64_json}` : null)
+  if (!url) throw new Error('No image URL or base64 in response')
 
   return {
-    url: image.url!,
-    revisedPrompt: image.revised_prompt ?? prompt,
-    costUsd: 0.04,
+    url,
+    revisedPrompt: (image as any).revised_prompt ?? prompt,
+    costUsd: 0.042,
   }
 }
