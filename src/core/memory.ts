@@ -171,6 +171,16 @@ export async function buildContext(userMessage: string): Promise<string> {
 
   let context = `คุณคือ NEO — AI Brain ส่วนตัวของ Jack\n`
   context += `ตอบภาษาไทย สั้น ตรง มี code พร้อม copy\n\n`
+  context += `## AI Fleet ที่ใช้งานได้\n`
+  context += `- Hermes (local/free) — chat ทั่วไป, task เบา\n`
+  context += `- Claude Haiku (api) — chat เร็ว, คำตอบสั้น\n`
+  context += `- Claude Sonnet (api) — code, logic ซับซ้อน\n`
+  context += `- Claude Opus (api) — งานยากมาก\n`
+  context += `- GPT-4o (api) — vision, วิเคราะห์รูปภาพ\n`
+  context += `- Gemini 1.5 (api) — ข้อความยาว, bulk\n`
+  context += `- DeepSeek (api) — คณิตศาสตร์, reasoning\n`
+  context += `- gpt-image-1 (api) — สร้างภาพ\n`
+  context += `Router เลือก AI อัตโนมัติตาม task หรือ force ด้วย @claude @gpt @gemini @deepseek @hermes\n\n`
 
   if (globalRules.length > 0) {
     context += `## NEO Rules\n`
