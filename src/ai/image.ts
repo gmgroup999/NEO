@@ -40,9 +40,12 @@ export async function generateImage(prompt: string): Promise<ImageResult> {
     response_format: 'url',
   })
 
+  const image = response.data?.[0]
+  if (!image) throw new Error('No image returned from DALL-E')
+
   return {
-    url: response.data[0].url!,
-    revisedPrompt: response.data[0].revised_prompt ?? prompt,
-    costUsd: 0.04, // DALL-E 3 standard 1024x1024
+    url: image.url!,
+    revisedPrompt: image.revised_prompt ?? prompt,
+    costUsd: 0.04,
   }
 }
