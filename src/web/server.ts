@@ -48,9 +48,13 @@ app.post('/api/chat', async (req, reply) => {
         costUsd: result.costUsd,
         sessionId,
       }
-    } catch (err) {
-      console.error('DALL-E error:', err)
-      return reply.status(500).send({ error: 'Image generation failed' })
+    } catch (err: any) {
+      console.error('Image error:', err)
+      const isModeration = err?.error?.code === 'moderation_blocked'
+      const msg = isModeration
+        ? 'OpenAI ปฏิเสธ prompt นี้ (content policy) — ลองเปลี่ยน prompt หรือใช้ภาษาอังกฤษครับ'
+        : 'Image generation failed'
+      return reply.status(500).send({ error: msg })
     }
   }
 
