@@ -47,7 +47,7 @@ export async function generateImage(prompt: string): Promise<ImageResult> {
     prompt,
     n: 1,
     size: '1024x1024',
-    quality: 'standard',
+    quality: 'medium',
   })
 
   const image = response.data?.[0]
