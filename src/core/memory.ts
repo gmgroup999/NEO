@@ -235,15 +235,15 @@ function detectProjectMentions(text: string): string[] {
 
 async function generateEmbedding(text: string): Promise<number[]> {
   try {
-    const res = await fetch(`${process.env.OLLAMA_BASE_URL}/api/embeddings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'nomic-embed-text', prompt: text }),
+    const OpenAI = (await import('openai')).default
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    const res = await client.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text.slice(0, 8000),
     })
-    const data = await res.json() as { embedding: number[] }
-    return data.embedding
-  } catch {
-    console.warn('Embedding failed, using zero vector')
+    return res.data[0].embedding
+  } catch (err) {
+    console.warn('Embedding failed, using zero vector:', (err as Error).message)
     return new Array(1536).fill(0)
   }
 }
