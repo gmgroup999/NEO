@@ -82,7 +82,20 @@ function autoSelectModel(message: string): AIModel {
   return 'hermes'
 }
 
-// ─── PARSE @MENTION ───
+// ─── FUZZY HELPERS ───
+function levenshtein(a: string, b: string): number {
+  const dp = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)
+  )
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
+  return dp[a.length][b.length]
+}
+
+// ─── PARSE @MENTION (with fuzzy matching for typos) ───
 export function parseMention(message: string): { model: AIModel | null; cleanMessage: string } {
   const mentionMap: Record<string, AIModel> = {
     '@hermes': 'hermes',
@@ -94,9 +107,24 @@ export function parseMention(message: string): { model: AIModel | null; cleanMes
     '@deepseek': 'deepseek',
   }
 
-  for (const [mention, model] of Object.entries(mentionMap)) {
-    if (message.toLowerCase().startsWith(mention)) {
-      return { model, cleanMessage: message.slice(mention.length).trim() }
+  const firstWord = message.split(/\s/)[0].toLowerCase()
+
+  // Exact match
+  if (mentionMap[firstWord]) {
+    return { model: mentionMap[firstWord], cleanMessage: message.slice(firstWord.length).trim() }
+  }
+
+  // Fuzzy match — only if starts with @ and within 2 edits of a known mention
+  if (firstWord.startsWith('@')) {
+    let best: { model: AIModel; mention: string; dist: number } | null = null
+    for (const [mention, model] of Object.entries(mentionMap)) {
+      const dist = levenshtein(firstWord, mention)
+      if (dist <= 2 && (!best || dist < best.dist)) {
+        best = { model, mention, dist }
+      }
+    }
+    if (best) {
+      return { model: best.model, cleanMessage: message.slice(firstWord.length).trim() }
     }
   }
 

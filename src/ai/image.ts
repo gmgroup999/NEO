@@ -8,6 +8,11 @@ export interface ImageResult {
   costUsd: number
 }
 
+// Remove Thai tone marks for fuzzy matching (handles misplaced ้ ่ ๊ ๋)
+function stripTones(text: string): string {
+  return text.replace(/[่-๋]/g, '')
+}
+
 export function isImageRequest(message: string): boolean {
   const triggers = [
     'สร้างภาพ', 'วาดภาพ', 'สร้างรูป', 'ทำภาพ',
@@ -20,11 +25,14 @@ export function isImageRequest(message: string): boolean {
     'can you', 'could you', 'do you', 'support',
   ]
   const lower = message.toLowerCase()
-  if (!triggers.some(t => lower.includes(t))) return false
-  if (questions.some(q => lower.includes(q))) return false
+  const normalized = stripTones(lower)
+
+  // Match triggers with tone-insensitive comparison
+  const hasTrigger = triggers.some(t => normalized.includes(stripTones(t)))
+  if (!hasTrigger) return false
+  if (questions.some(q => normalized.includes(stripTones(q)))) return false
   if (message.trim().endsWith('?') || message.trim().endsWith('？')) return false
 
-  // Require meaningful prompt after removing trigger keywords
   const cleaned = extractImagePrompt(message)
   return cleaned.length >= 3
 }
