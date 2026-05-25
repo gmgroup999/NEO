@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO — AI Brain</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&family=Noto+Sans+Thai:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:       #04040a;
+  --s1:       #080810;
+  --s2:       #0d0d1a;
+  --s3:       #131325;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.12);
+  --accent:   #00e5ff;
+  --accent2:  #7c3aed;
+  --gold:     #f59e0b;
+  --text:     #dde1f0;
+  --muted:    #525270;
+  --muted2:   #3a3a55;
+  --hermes:   #10b981;
+  --claude:   #8b5cf6;
+  --dalle:    #f472b6;
+  --gpt:      #10a37f;
+  --gemini:   #4285f4;
+  --deepseek: #ef4444;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans Thai', sans-serif;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Ambient background */
+body::before {
+  content: '';
+  position: fixed;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(0,229,255,0.03) 0%, transparent 70%);
+  top: -200px; left: -200px;
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(124,58,237,0.04) 0%, transparent 70%);
+  bottom: -100px; right: -100px;
+  pointer-events: none;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--s1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.logo-area {
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 4px;
+}
+
+.logo-mark {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  color: #000;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--accent);
+}
+
+.logo-sub {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  font-family: 'IBM Plex Mono', monospace;
+  padding-left: 45px;
+}
+
+.section-label {
+  padding: 14px 18px 6px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+}
+
+/* Projects */
+.project-list { padding: 0 8px; }
+
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 1px;
+  border: 1px solid transparent;
+}
+
+.project-item:hover { background: var(--s2); }
+
+.project-item.active {
+  background: rgba(0,229,255,0.06);
+  border-color: rgba(0,229,255,0.12);
+}
+
+.pdot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pname { font-size: 12.5px; flex: 1; font-weight: 500; }
+.pstatus {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+}
+
+/* AI Fleet */
+.fleet-list { padding: 0 8px; }
+
+.fleet-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  margin-bottom: 1px;
+}
+
+.fleet-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.fleet-name {
+  font-size: 11.5px;
+  font-family: 'IBM Plex Mono', monospace;
+  flex: 1;
+}
+
+.fleet-tag {
+  font-size: 9px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Memory counter */
+.sidebar-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: 14px 18px;
+}
+
+.mem-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-bottom: 6px;
+}
+
+.mem-stat span { color: var(--accent); }
+
+.cost-today {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.cost-today em { color: var(--hermes); font-style: normal; }
+
+/* ── MAIN ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Topbar */
+.topbar {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--s1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.context-label {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+}
+
+.chips { display: flex; gap: 5px; }
+
+.chip {
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  border: 1px solid;
+}
+
+.chip.all   { color: var(--accent);  border-color: rgba(0,229,255,0.25); background: rgba(0,229,255,0.06); }
+.chip.joy   { color: #60a5fa; border-color: rgba(96,165,250,0.25); background: rgba(96,165,250,0.06); }
+.chip.boom  { color: #fb923c; border-color: rgba(251,146,60,0.25); background: rgba(251,146,60,0.06); }
+.chip.sab   { color: var(--hermes); border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.06); }
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  background: rgba(16,185,129,0.08);
+  border: 1px solid rgba(16,185,129,0.2);
+  color: var(--hermes);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mode-pill:hover { background: rgba(16,185,129,0.15); }
+
+.mode-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--hermes);
+  animation: blink 1.5s infinite;
+}
+
+/* Messages */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted2) transparent;
+}
+
+.messages::-webkit-scrollbar { width: 3px; }
+.messages::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 2px; }
+
+.sys-msg {
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 1px;
+  padding: 4px 0;
+}
+
+.msg { display: flex; gap: 13px; animation: fadeUp 0.2s ease; }
+.msg.user { flex-direction: row-reverse; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(6px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.avatar.neo {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000;
+  font-size: 10px;
+}
+
+.avatar.jack {
+  background: var(--s3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+
+.msg-body { max-width: 680px; }
+
+.bubble {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.msg.neo .bubble {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-top-left-radius: 3px;
+}
+
+.msg.user .bubble {
+  background: rgba(0,229,255,0.06);
+  border: 1px solid rgba(0,229,255,0.14);
+  border-top-right-radius: 3px;
+}
+
+/* Image bubble */
+.img-bubble {
+  margin-top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  position: relative;
+  max-width: 420px;
+}
+
+.img-bubble img {
+  width: 100%;
+  display: block;
+}
+
+.img-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 8px 12px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Meta row */
+.msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+  padding-left: 2px;
+}
+
+.model-badge {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.badge-hermes  { background: rgba(16,185,129,0.1);  color: var(--hermes); }
+.badge-claude  { background: rgba(139,92,246,0.1);   color: var(--claude); }
+.badge-dalle   { background: rgba(244,114,182,0.1);  color: var(--dalle); }
+.badge-gpt     { background: rgba(16,163,127,0.1);   color: var(--gpt); }
+.badge-gemini  { background: rgba(66,133,244,0.1);   color: var(--gemini); }
+.badge-deepseek{ background: rgba(239,68,68,0.1);    color: var(--deepseek); }
+
+.meta-cost {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+}
+
+.mem-used {
+  font-size: 9px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mem-used::before { content: '◈'; color: var(--accent); opacity: 0.5; }
+
+/* Memory recall box */
+.recall-box {
+  background: rgba(0,229,255,0.03);
+  border: 1px solid rgba(0,229,255,0.08);
+  border-radius: 8px;
+  padding: 9px 13px;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+}
+
+.recall-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+
+.recall-item {
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+  line-height: 1.5;
+}
+
+.recall-item::before { content: '▸'; color: var(--accent); opacity: 0.4; flex-shrink: 0; }
+
+/* Typing */
+.typing-wrap { display: flex; gap: 13px; }
+
+.typing-bubble {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-top-left-radius: 3px;
+  padding: 14px 18px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.tdot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: typing 1.2s infinite;
+  opacity: 0.4;
+}
+
+.tdot:nth-child(2) { animation-delay: 0.2s; }
+.tdot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+  0%,60%,100% { opacity:0.2; transform:translateY(0); }
+  30% { opacity:1; transform:translateY(-3px); }
+}
+
+/* Input area */
+.input-zone {
+  border-top: 1px solid var(--border);
+  background: var(--s1);
+  padding: 14px 24px 18px;
+}
+
+/* Quick actions */
+.quick-actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.qa-btn {
+  padding: 4px 11px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.qa-btn:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.qa-btn.image {
+  color: var(--dalle);
+  border-color: rgba(244,114,182,0.2);
+  background: rgba(244,114,182,0.05);
+}
+
+.qa-btn.image:hover { background: rgba(244,114,182,0.1); }
+
+.input-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 14px;
+  transition: border-color 0.2s;
+}
+
+.input-wrap:focus-within {
+  border-color: rgba(0,229,255,0.25);
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.04);
+}
+
+.input-wrap textarea {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--text);
+  font-family: 'Noto Sans Thai', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  max-height: 130px;
+  min-height: 22px;
+}
+
+.input-wrap textarea::placeholder { color: var(--muted); }
+
+.send-btn {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #00b8d4);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.send-btn:hover { opacity: 0.85; transform: scale(0.96); }
+.send-btn svg { width: 15px; height: 15px; fill: #000; }
+
+.input-hints {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.hint {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+kbd {
+  background: var(--s3);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 9px;
+}
+
+.hint-right {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+
+.model-hint {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.model-hint .dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo-area">
+    <div class="logo-row">
+      <div class="logo-mark">N</div>
+      <div class="logo-text">NEO</div>
+    </div>
+    <div class="logo-sub">PERSONAL AI BRAIN</div>
+  </div>
+
+  <div class="section-label">Projects</div>
+  <div class="project-list">
+    <div class="project-item active">
+      <div class="pdot" style="background:#60a5fa"></div>
+      <div class="pname">JoyRide</div>
+      <div class="pstatus">active</div>
+    </div>
+    <div class="project-item">
+      <div class="pdot" style="background:#fb923c"></div>
+      <div class="pname">boonma paper</div>
+      <div class="pstatus">active</div>
+    </div>
+    <div class="project-item">
+      <div class="pdot" style="background:#10b981"></div>
+      <div class="pname">sabaidee.cc</div>
+      <div class="pstatus">build</div>
+    </div>
+    <div class="project-item">
+      <div class="pdot" style="background:#a78bfa"></div>
+      <div class="pname">Pawfect Passport</div>
+      <div class="pstatus">plan</div>
+    </div>
+    <div class="project-item">
+      <div class="pdot" style="background:#fbbf24"></div>
+      <div class="pname">เณรน้อยธรรมะ</div>
+      <div class="pstatus">active</div>
+    </div>
+    <div class="project-item">
+      <div class="pdot" style="background:#00e5ff"></div>
+      <div class="pname">NEO</div>
+      <div class="pstatus">build</div>
+    </div>
+  </div>
+
+  <div class="section-label">AI Fleet</div>
+  <div class="fleet-list">
+    <div class="fleet-item">
+      <div class="fleet-dot" style="background:var(--hermes)"></div>
+      <div class="fleet-name" style="color:var(--hermes)">Hermes 4</div>
+      <div class="fleet-tag">local·$0</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-dot" style="background:var(--claude);animation-delay:.3s"></div>
+      <div class="fleet-name" style="color:var(--claude)">Claude Sonnet</div>
+      <div class="fleet-tag">api</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-dot" style="background:var(--gpt);animation-delay:.6s"></div>
+      <div class="fleet-name" style="color:var(--gpt)">GPT-4o</div>
+      <div class="fleet-tag">api</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-dot" style="background:var(--dalle);animation-delay:.9s"></div>
+      <div class="fleet-name" style="color:var(--dalle)">DALL-E 3</div>
+      <div class="fleet-tag">image</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-dot" style="background:var(--gemini);animation-delay:1.2s"></div>
+      <div class="fleet-name" style="color:var(--gemini)">Gemini 1.5</div>
+      <div class="fleet-tag">api</div>
+    </div>
+    <div class="fleet-item">
+      <div class="fleet-dot" style="background:var(--deepseek);animation-delay:1.5s"></div>
+      <div class="fleet-name" style="color:var(--deepseek)">DeepSeek</div>
+      <div class="fleet-tag">api</div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="mem-stat">🧠 <span>142</span> memories</div>
+    <div class="mem-stat">📂 <span>6</span> projects</div>
+    <div class="cost-today">วันนี้: <em>$0.000</em></div>
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)">
+      <div style="font-size:9px;letter-spacing:1.5px;color:#525270;font-family:'IBM Plex Mono',monospace;margin-bottom:4px">📱 TELEGRAM</div>
+      <div id="tg-activity" style="min-height:14px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="context-label">CONTEXT</div>
+    <div class="chips">
+      <div class="chip all">ALL PROJECTS</div>
+      <div class="chip joy">JoyRide</div>
+      <div class="chip boom">boonma</div>
+    </div>
+    <div class="topbar-right">
+      <div class="mode-pill">
+        <div class="mode-dot"></div>
+        Auto-route · ON
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages" id="messages">
+
+    <div class="sys-msg">── NEO SESSION · 142 MEMORIES LOADED · z-node.cc ──</div>
+
+    <!-- NEO greeting -->
+    <div class="msg neo">
+      <div class="avatar neo">N</div>
+      <div class="msg-body">
+        <div class="bubble">
+          สวัสดีครับ Jack 👋<br><br>
+          NEO พร้อมแล้ว — จำ context ของทุก project ไว้แล้วครับ<br>
+          คุยได้เลย หรือพิมพ์ <strong style="color:var(--dalle)">สร้างภาพ...</strong> เพื่อให้ DALL-E 3 สร้างภาพให้ครับ
+        </div>
+        <div class="msg-meta">
+          <span class="model-badge badge-hermes">Hermes 4 · local</span>
+          <span class="meta-cost">$0.00</span>
+          <span class="mem-used">142 memories loaded</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- User: code question -->
+    <div class="msg user">
+      <div class="avatar jack">J</div>
+      <div class="msg-body">
+        <div class="bubble">JoyRide rider reconnect bug ยังแก้ไม่ได้ มีวิธีอื่นไหม</div>
+      </div>
+    </div>
+
+    <!-- NEO: code response with memory -->
+    <div class="msg neo">
+      <div class="avatar neo">N</div>
+      <div class="msg-body">
+        <div class="recall-box">
+          <div class="recall-title">◈ MEMORY RECALLED — JoyRide</div>
+          <div class="recall-item">one-active-job guard: DB trigger + TypeScript + RLS</div>
+          <div class="recall-item">race condition เมื่อ rider offline แล้ว reconnect เร็ว</div>
+          <div class="recall-item">Golden Rule: ห้าม rename/delete schema, Supabase only</div>
+        </div>
+        <div class="bubble">
+          ลองแก้ด้วย <strong style="color:var(--accent)">Supabase Realtime presence</strong> แทน polling ครับ — ไม่มี race condition:<br><br>
+          <code style="background:var(--s3);padding:2px 6px;border-radius:4px;font-size:12px">channel.on('presence', { event: 'sync' }, () => syncRiderState())</code><br><br>
+          Presence sync อัตโนมัติเมื่อ connection กลับมา ไม่ต้อง debounce เองครับ
+        </div>
+        <div class="msg-meta">
+          <span class="model-badge badge-claude">Claude Sonnet · api</span>
+          <span class="meta-cost">$0.004</span>
+          <span class="mem-used">3 memories used</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- User: image request -->
+    <div class="msg user">
+      <div class="avatar jack">J</div>
+      <div class="msg-body">
+        <div class="bubble">สร้างภาพ logo NEO สไตล์ minimal dark มี circuit pattern สีฟ้า</div>
+      </div>
+    </div>
+
+    <!-- NEO: image response -->
+    <div class="msg neo">
+      <div class="avatar neo">N</div>
+      <div class="msg-body">
+        <div class="bubble">กำลังสร้างภาพด้วย DALL-E 3 ครับ...</div>
+        <div class="img-bubble">
+          <!-- Placeholder image representing generated result -->
+          <div style="
+            width:100%;
+            height:280px;
+            background: linear-gradient(135deg, #04040a 0%, #0a0a18 40%, #050510 100%);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            position:relative;
+            overflow:hidden;
+          ">
+            <!-- Circuit pattern SVG -->
+            <svg width="100%" height="100%" style="position:absolute;inset:0;opacity:0.3" viewBox="0 0 420 280">
+              <line x1="0" y1="80" x2="420" y2="80" stroke="#00e5ff" stroke-width="0.5" opacity="0.4"/>
+              <line x1="0" y1="200" x2="420" y2="200" stroke="#00e5ff" stroke-width="0.5" opacity="0.3"/>
+              <line x1="100" y1="0" x2="100" y2="280" stroke="#00e5ff" stroke-width="0.5" opacity="0.3"/>
+              <line x1="320" y1="0" x2="320" y2="280" stroke="#00e5ff" stroke-width="0.5" opacity="0.4"/>
+              <circle cx="100" cy="80" r="4" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.6"/>
+              <circle cx="320" cy="80" r="4" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.6"/>
+              <circle cx="100" cy="200" r="4" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.6"/>
+              <circle cx="320" cy="200" r="4" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.6"/>
+              <line x1="100" y1="80" x2="160" y2="80" stroke="#00e5ff" stroke-width="1.5" opacity="0.5"/>
+              <line x1="260" y1="80" x2="320" y2="80" stroke="#00e5ff" stroke-width="1.5" opacity="0.5"/>
+              <rect x="160" y="70" width="100" height="20" rx="2" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.3"/>
+            </svg>
+            <!-- NEO logo center -->
+            <div style="
+              width:90px;height:90px;
+              background:linear-gradient(135deg,#00e5ff,#7c3aed);
+              border-radius:20px;
+              display:flex;align-items:center;justify-content:center;
+              font-family:'IBM Plex Mono',monospace;
+              font-size:36px;font-weight:700;color:#000;
+              box-shadow:0 0 40px rgba(0,229,255,0.4);
+              position:relative;z-index:1;
+            ">N</div>
+          </div>
+          <div class="img-overlay">DALL-E 3 · NEO Logo Concept · 1024×1024</div>
+        </div>
+        <div class="msg-meta" style="margin-top:8px">
+          <span class="model-badge badge-dalle">DALL-E 3 · image</span>
+          <span class="meta-cost">$0.040 · 1024×1024</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing (hidden) -->
+    <div class="typing-wrap" id="typing" style="display:none">
+      <div class="avatar neo">N</div>
+      <div class="typing-bubble">
+        <div class="tdot"></div>
+        <div class="tdot"></div>
+        <div class="tdot"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Input zone -->
+  <div class="input-zone">
+    <div class="quick-actions">
+      <div class="qa-btn" onclick="insertText('@hermes ')">@hermes</div>
+      <div class="qa-btn" onclick="insertText('@claude ')">@claude</div>
+      <div class="qa-btn" onclick="insertText('@gpt ')">@gpt</div>
+      <div class="qa-btn" onclick="insertText('@gemini ')">@gemini</div>
+      <div class="qa-btn" onclick="insertText('@deepseek ')">@deepseek</div>
+      <div class="qa-btn image" onclick="insertText('สร้างภาพ ')">🎨 สร้างภาพ</div>
+    </div>
+
+    <div class="input-wrap">
+      <textarea
+        id="inp"
+        placeholder="คุยกับ NEO... หรือพิมพ์ สร้างภาพ เพื่อสร้างรูป"
+        rows="1"
+        onkeydown="onKey(event)"
+        oninput="resize(this)"
+      ></textarea>
+      <button class="send-btn" onclick="send()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+
+    <div class="input-hints">
+      <div class="hint"><kbd>Enter</kbd> ส่ง</div>
+      <div class="hint"><kbd>Shift+Enter</kbd> ขึ้นบรรทัด</div>
+      <div class="hint-right">
+        <div class="model-hint"><div class="dot" style="background:var(--hermes)"></div>Hermes</div>
+        <div class="model-hint"><div class="dot" style="background:var(--claude)"></div>Claude</div>
+        <div class="model-hint"><div class="dot" style="background:var(--dalle)"></div>DALL-E</div>
+        <div class="model-hint" style="color:var(--muted)">auto-routed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let sessionId = crypto.randomUUID()
+
+const modelBadge = {
+  'hermes':        { cls: 'badge-hermes',   label: 'Hermes 4 · local' },
+  'claude-haiku':  { cls: 'badge-claude',   label: 'Claude Haiku · api' },
+  'claude-sonnet': { cls: 'badge-claude',   label: 'Claude Sonnet · api' },
+  'claude-opus':   { cls: 'badge-claude',   label: 'Claude Opus · api' },
+  'gpt-4o':        { cls: 'badge-gpt',      label: 'GPT-4o · api' },
+  'gemini':        { cls: 'badge-gemini',   label: 'Gemini 1.5 · api' },
+  'deepseek':      { cls: 'badge-deepseek', label: 'DeepSeek · api' },
+  'dall-e-3':      { cls: 'badge-dalle',    label: 'DALL-E 3 · image' },
+}
+
+function resize(el) {
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 130) + 'px'
+}
+
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+}
+
+function insertText(t) {
+  const inp = document.getElementById('inp')
+  inp.value = t
+  inp.focus()
+  resize(inp)
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+function addMsg(html) {
+  const el = document.createElement('div')
+  el.innerHTML = html
+  const msgs = document.getElementById('messages')
+  const typing = document.getElementById('typing')
+  msgs.insertBefore(el.firstElementChild, typing)
+  msgs.scrollTop = msgs.scrollHeight
+}
+
+function showTyping() {
+  const t = document.getElementById('typing')
+  t.style.display = 'flex'
+  document.getElementById('messages').scrollTop = 99999
+}
+
+function hideTyping() {
+  document.getElementById('typing').style.display = 'none'
+}
+
+function renderTextResponse(data) {
+  const badge = modelBadge[data.model] ?? { cls: 'badge-hermes', label: data.model }
+  const cost = data.costUsd === 0 ? '$0.00' : `$${data.costUsd.toFixed(5)}`
+  const routeTag = data.routedBy === 'manual' ? ' · manual' : ''
+  addMsg(`
+    <div class="msg neo">
+      <div class="avatar neo">N</div>
+      <div class="msg-body">
+        <div class="bubble">${escHtml(data.content).replace(/\n/g,'<br>')}</div>
+        <div class="msg-meta">
+          <span class="model-badge ${badge.cls}">${badge.label}${routeTag}</span>
+          <span class="meta-cost">${cost} · ⚡${data.latencyMs}ms</span>
+        </div>
+      </div>
+    </div>
+  `)
+}
+
+function renderImageResponse(data) {
+  addMsg(`
+    <div class="msg neo">
+      <div class="avatar neo">N</div>
+      <div class="msg-body">
+        <div class="bubble">สร้างภาพด้วย DALL-E 3 เสร็จแล้วครับ 🎨</div>
+        <div class="img-bubble">
+          <img src="${data.imageUrl}" alt="Generated image" loading="lazy"/>
+          <div class="img-overlay">DALL-E 3 · 1024×1024</div>
+        </div>
+        <div class="msg-meta" style="margin-top:8px">
+          <span class="model-badge badge-dalle">DALL-E 3 · image</span>
+          <span class="meta-cost">$${data.costUsd.toFixed(3)}</span>
+        </div>
+      </div>
+    </div>
+  `)
+}
+
+function renderError(msg) {
+  addMsg(`
+    <div class="msg neo">
+      <div class="avatar neo">N</div>
+      <div class="msg-body">
+        <div class="bubble" style="color:#ef4444">❌ ${escHtml(msg)}</div>
+      </div>
+    </div>
+  `)
+}
+
+async function send() {
+  const inp = document.getElementById('inp')
+  const text = inp.value.trim()
+  if (!text) return
+
+  addMsg(`
+    <div class="msg user">
+      <div class="avatar jack">J</div>
+      <div class="msg-body">
+        <div class="bubble">${escHtml(text).replace(/\n/g,'<br>')}</div>
+      </div>
+    </div>
+  `)
+
+  inp.value = ''
+  inp.style.height = 'auto'
+  showTyping()
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, sessionId }),
+    })
+
+    hideTyping()
+
+    if (!res.ok) {
+      renderError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      return
+    }
+
+    const data = await res.json()
+    sessionId = data.sessionId ?? sessionId
+
+    if (data.type === 'image') {
+      renderImageResponse(data)
+    } else {
+      renderTextResponse(data)
+    }
+  } catch (e) {
+    hideTyping()
+    renderError('เชื่อมต่อ NEO ไม่ได้ — ตรวจสอบว่า server รันอยู่')
+  }
+
+  document.getElementById('messages').scrollTop = 99999
+}
+
+// ─── Status refresh ───
+async function loadStatus() {
+  try {
+    const res = await fetch('/api/status')
+    if (!res.ok) return
+    const data = await res.json()
+    const spans = document.querySelectorAll('.mem-stat span')
+    const costEl = document.querySelector('.cost-today em')
+    if (spans[0]) spans[0].textContent = data.memories
+    if (spans[1]) spans[1].textContent = data.activeProjects
+    if (costEl) costEl.textContent = `$${data.todayCost.toFixed(4)}`
+  } catch {}
+}
+
+loadStatus()
+setInterval(loadStatus, 30000)
+
+// ─── SSE — Real-time Telegram activity ───
+const modelBadgeMap = {
+  'hermes': { cls: 'badge-hermes', short: '🟢 Hermes' },
+  'claude-haiku': { cls: 'badge-claude', short: '🟣 Haiku' },
+  'claude-sonnet': { cls: 'badge-claude', short: '🟣 Sonnet' },
+  'claude-opus': { cls: 'badge-claude', short: '🟣 Opus' },
+  'gpt-4o': { cls: 'badge-gpt', short: '🔵 GPT-4o' },
+  'gemini': { cls: 'badge-gemini', short: '🔷 Gemini' },
+  'deepseek': { cls: 'badge-deepseek', short: '🔴 DeepSeek' },
+}
+
+function showToast(event) {
+  const badge = modelBadgeMap[event.data.model] ?? { cls: 'badge-hermes', short: event.data.model }
+  const cost = event.data.costUsd === 0 ? '$0.00' : `$${event.data.costUsd.toFixed(5)}`
+  const preview = event.data.preview ?? ''
+
+  const toast = document.createElement('div')
+  toast.style.cssText = `
+    position:fixed; bottom:90px; right:20px;
+    background:#0d0d1a; border:1px solid rgba(0,229,255,0.2);
+    border-radius:10px; padding:10px 14px; z-index:999;
+    font-family:'IBM Plex Mono',monospace; font-size:11px;
+    color:#dde1f0; max-width:280px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    animation:fadeUp 0.2s ease;
+  `
+  toast.innerHTML = `
+    <div style="color:#00e5ff;font-size:9px;letter-spacing:1px;margin-bottom:4px">
+      📱 TELEGRAM · ${badge.short} · ${cost}
+    </div>
+    <div style="color:#9292aa;font-size:10px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+      ${preview.replace(/</g,'&lt;')}
+    </div>
+  `
+  document.body.appendChild(toast)
+  setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transition = 'opacity 0.4s'
+    setTimeout(() => toast.remove(), 400)
+  }, 4000)
+
+  // Update activity log in sidebar
+  const actEl = document.getElementById('tg-activity')
+  if (actEl) {
+    const time = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+    const item = document.createElement('div')
+    item.style.cssText = 'font-size:9px;color:#525270;margin-bottom:2px;font-family:"IBM Plex Mono",monospace;'
+    item.textContent = `${time} · ${badge.short} · ${cost}`
+    actEl.prepend(item)
+    if (actEl.children.length > 5) actEl.lastElementChild?.remove()
+  }
+}
+
+function connectSSE() {
+  const es = new EventSource('/api/events')
+
+  es.onmessage = (e) => {
+    try {
+      const event = JSON.parse(e.data)
+      if (event.type === 'telegram_message') {
+        showToast(event)
+        loadStatus()
+      }
+    } catch {}
+  }
+
+  es.onerror = () => {
+    es.close()
+    setTimeout(connectSSE, 5000) // reconnect หลัง 5 วิ
+  }
+}
+
+connectSSE()
+</script>
+</body>
+</html>

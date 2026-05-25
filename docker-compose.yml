@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  neo:
+    build: .
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=hermes4
+      - PORT=3000
+      - NEO_DOMAIN=neo.z-node.cc
+    ports:
+      - "3000:3000"
+    depends_on:
+      - ollama
+    networks:
+      - neo-network
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - neo-network
+    command: >
+      sh -c "ollama serve &
+             sleep 5 &&
+             ollama pull hermes4 &&
+             ollama pull nomic-embed-text &&
+             wait"
+
+volumes:
+  ollama_data:
+
+networks:
+  neo-network:
+    driver: bridge

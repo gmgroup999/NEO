@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Copy-Item \"h:\\\\NEO-OS\\\\neo-v2\\\\neo\\\\public\\\\index.html\" \"h:\\\\NEO-OS\\\\public\\\\index.html\" -Force)",
+      "PowerShell(Copy-Item \"h:\\\\NEO-OS\\\\001_neo_schema.sql\" \"h:\\\\NEO-OS\\\\supabase\\\\migrations\\\\001_neo_schema.sql\" -Force)",
+      "PowerShell(Get-ChildItem -Path \"h:\\\\NEO-OS\" -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules|neo-v2|old.md\" } | Select-Object @{N=\"Path\";E={$_.FullName.Replace\\(\"h:\\\\NEO-OS\\\\\",\"\"\\)}} | Sort-Object Path)",
+      "Bash(find /mnt/h/NEO-OS -type f ! -path \"*/node_modules/*\" ! -path \"*/neo-v2/*\" ! -path \"*/old.md/*\" ! -path \"*/.git/*\" | sort | sed 's|/mnt/h/NEO-OS/||')",
+      "Read(//mnt/h/**)",
+      "PowerShell(Get-ChildItem -Path \"h:\\\\NEO-OS\" -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules\" -and $_.FullName -notmatch \"neo-v2\" -and $_.FullName -notmatch \"old\\\\.md\" } | ForEach-Object { $_.FullName.Replace\\(\"h:\\\\NEO-OS\\\\\",\"\"\\) } | Sort-Object)"
+    ]
+  }
+}
