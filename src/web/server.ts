@@ -28,9 +28,9 @@ app.post('/api/chat', async (req, reply) => {
     try {
       const result = await generateImage(prompt)
 
-      await logAICall({
+      logAICall({
         sessionId,
-        model: 'dall-e-3',
+        model: 'gpt-image-1',
         provider: 'openai',
         taskType: 'image',
         routedBy: 'auto',
@@ -38,13 +38,13 @@ app.post('/api/chat', async (req, reply) => {
         completionTokens: 0,
         costUsd: result.costUsd,
         latencyMs: 0,
-      })
+      }).catch(console.error)
 
       return {
         type: 'image',
         imageUrl: result.url,
         revisedPrompt: result.revisedPrompt,
-        model: 'dall-e-3',
+        model: 'gpt-image-1',
         costUsd: result.costUsd,
         sessionId,
       }
