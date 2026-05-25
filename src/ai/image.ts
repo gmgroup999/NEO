@@ -15,7 +15,18 @@ export function isImageRequest(message: string): boolean {
     '@dalle', '@dall-e', 'dall-e',
     'ภาพของ', 'รูปของ',
   ]
-  return triggers.some(t => message.toLowerCase().includes(t))
+  const questions = [
+    'ได้มั้ย', 'ได้ไหม', 'ทำได้มั้ย', 'ทำได้ไหม', 'สามารถ', 'รองรับ',
+    'can you', 'could you', 'do you', 'support',
+  ]
+  const lower = message.toLowerCase()
+  if (!triggers.some(t => lower.includes(t))) return false
+  if (questions.some(q => lower.includes(q))) return false
+  if (message.trim().endsWith('?') || message.trim().endsWith('？')) return false
+
+  // Require meaningful prompt after removing trigger keywords
+  const cleaned = extractImagePrompt(message)
+  return cleaned.length >= 3
 }
 
 export function extractImagePrompt(message: string): string {

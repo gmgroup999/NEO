@@ -48,7 +48,8 @@ app.post('/api/chat', async (req, reply) => {
         costUsd: result.costUsd,
         sessionId,
       }
-    } catch {
+    } catch (err) {
+      console.error('DALL-E error:', err)
       return reply.status(500).send({ error: 'Image generation failed' })
     }
   }
