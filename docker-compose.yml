@@ -14,7 +14,7 @@ services:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=hermes3
+      - OLLAMA_MODEL=qwen2.5:3b
       - PORT=3000
       - NEO_DOMAIN=neo.z-node.cc
       - NEO_PASSWORD=${NEO_PASSWORD}
