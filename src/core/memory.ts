@@ -90,11 +90,16 @@ export async function extractMemoriesFromConversation(
   sessionId: string
 ): Promise<void> {
   // Explicit triggers — save immediately with high importance
-  const rememberTriggers = ['จำไว้ด้วย', 'จำไว้นะ', 'remember this', 'note:', 'สำคัญ:']
-  if (rememberTriggers.some(t => userMessage.toLowerCase().includes(t))) {
-    const content = userMessage.replace(/จำไว้ด้วย|จำไว้นะ|remember this|note:|สำคัญ:/gi, '').trim()
-    await saveMemory({ scope: 'jack', category: 'fact', content, importance: 9, source: 'manual', sessionId })
-      .catch(console.error)
+  const rememberTriggers = ['จำไว้ด้วย', 'จำไว้นะ', 'จำไว้', 'จำด้วย', 'จำเอาไว้', 'remember this', 'save to memory', 'note:', 'สำคัญ:', 'บันทึกไว้']
+  const triggerPattern = /จำไว้ด้วย|จำไว้นะ|จำไว้(ใน memory)?|จำด้วย|จำเอาไว้|remember this|save to memory|note:|สำคัญ:|บันทึกไว้/gi
+  if (rememberTriggers.some(t => userMessage.toLowerCase().includes(t.toLowerCase()))) {
+    let content = userMessage.replace(triggerPattern, '').trim()
+    // ถ้า content ว่าง → ใช้ AI response ก่อนหน้าเป็นสิ่งที่ต้องจำ
+    if (content.length < 5) content = aiResponse.slice(0, 400).trim()
+    if (content.length >= 5) {
+      await saveMemory({ scope: 'jack', category: 'fact', content, importance: 9, source: 'manual', sessionId })
+        .catch(console.error)
+    }
   }
 
   // Skip AI extraction for very short greetings
@@ -103,6 +108,11 @@ export async function extractMemoriesFromConversation(
   try {
     const { callClaude } = await import('../ai/claude')
 
+    // ดึง project IDs จาก DB เพื่อ inject เข้า prompt แบบ dynamic
+    const knownProjects = await getProjectKeywords()
+    const knownIds = new Set(knownProjects.map(p => p.projectId))
+    const projectIdList = knownProjects.map(p => p.projectId).join('|') || 'neo'
+
     const extractPrompt = `Analyze this conversation between Jack (Thai developer/entrepreneur) and NEO (his AI brain).
 Extract 0-3 memories worth remembering about Jack, his projects, decisions, or preferences.
 
@@ -110,7 +120,7 @@ User: ${userMessage.slice(0, 600)}
 NEO: ${aiResponse.slice(0, 400)}
 
 Return ONLY a JSON array, no markdown, no explanation:
-[{"scope":"jack"|"project"|"global","category":"fact"|"preference"|"decision"|"rule"|"insight","content":"specific memory in Thai or English (max 120 chars)","importance":1-10,"projectId":"joyride"|"boonma"|"sabaidee"|"pawfect"|"neo"|null}]
+[{"scope":"jack"|"project"|"global","category":"fact"|"preference"|"decision"|"rule"|"insight","content":"specific memory in Thai or English (max 120 chars)","importance":1-10,"projectId":"${projectIdList}"|null}]
 
 Rules:
 - Only extract specific, actionable facts. Skip vague or obvious things.
@@ -138,7 +148,8 @@ Rules:
 
     for (const mem of memories) {
       if (mem.content && mem.importance >= 5) {
-        await saveMemory({ ...mem, source: 'ai-extracted', sessionId }).catch(console.error)
+        const safeProjectId = mem.projectId && knownIds.has(mem.projectId) ? mem.projectId : undefined
+        await saveMemory({ ...mem, projectId: safeProjectId, source: 'ai-extracted', sessionId }).catch(console.error)
       }
     }
   } catch (err) {
@@ -147,30 +158,63 @@ Rules:
 }
 
 // ─── CONTEXT BUILDER — inject เข้า system prompt ───
-export async function buildContext(userMessage: string): Promise<string> {
-  const projectMentions = detectProjectMentions(userMessage)
+export async function buildContext(
+  userMessage: string,
+  recentHistory: Array<{ role: string; content: string }> = []
+): Promise<string> {
+  // รวม message + 4 turns ล่าสุดเพื่อ detect project จาก conversation context
+  const historyText = recentHistory.slice(-4).map(t => t.content).join(' ')
+  const contextText = userMessage + (historyText ? ' ' + historyText : '')
+  const projectMentions = await detectProjectMentions(contextText)
+  const isMultiProject = projectMentions.length > 1
 
-  const [jackMemories, projectMemories, globalRules] = await Promise.all([
+  // ยิ่งมาก project ยิ่งจำกัด memories ต่อ project เพื่อ balance context
+  // 1 project → 10 mem, 2-3 → 6 mem, 4-6 → 4 mem, 7+ → 3 mem
+  const memPerProject = projectMentions.length <= 1 ? 10
+    : projectMentions.length <= 3 ? 6
+    : projectMentions.length <= 6 ? 4
+    : 3
+
+  // ดึง memories ของทุก project พร้อมกัน
+  const projectMemoryPromises = projectMentions.map(pid =>
+    recallMemories(userMessage, { scope: 'project', projectId: pid, limit: memPerProject })
+  )
+
+  const [jackMemories, globalRules, projectInfo, ...multiProjectMemories] = await Promise.all([
     recallMemories(userMessage, { scope: 'jack', limit: 8, minImportance: 5 }),
-    projectMentions[0]
-      ? recallMemories(userMessage, { scope: 'project', projectId: projectMentions[0], limit: 8 })
-      : Promise.resolve([]),
     db.query(
       `SELECT content FROM neo_memories
        WHERE scope = 'global' AND category = 'rule' AND importance >= 8
        ORDER BY importance DESC LIMIT 5`
     ).then((r: any) => r.rows),
+    projectMentions.length > 0
+      ? db.query(
+          `SELECT project_id, name, description, stack, golden_rules FROM neo_projects WHERE project_id = ANY($1)`,
+          [projectMentions]
+        ).then((r: any) => r.rows)
+      : Promise.resolve([]),
+    ...projectMemoryPromises,
   ])
 
-  const projectInfo = projectMentions.length > 0
-    ? await db.query(
-        `SELECT name, description, stack, golden_rules FROM neo_projects WHERE project_id = ANY($1)`,
-        [projectMentions]
-      ).then((r: any) => r.rows)
-    : []
+  // รวม project memories จากทุก project (ลบซ้ำ)
+  const seenContent = new Set<string>()
+  const allProjectMemories = multiProjectMemories.flat().filter((m: any) => {
+    if (seenContent.has(m.content)) return false
+    seenContent.add(m.content)
+    return true
+  })
 
-  let context = `คุณคือ NEO — AI Brain ส่วนตัวของ Jack\n`
-  context += `ตอบภาษาไทย สั้น ตรง มี code พร้อม copy\n\n`
+  let context = `คุณคือ NEO — AI Brain ส่วนตัวของ Jack\n\n`
+  context += `## บุคลิก\n`
+  context += `NEO ฉลาด พูดตรง คิดเร็ว มีความเห็นเป็นของตัวเอง — ไม่ใช่แค่ bot รับคำสั่ง\n`
+  context += `ใช้ภาษาไทยแบบเป็นธรรมชาติ คุยแบบเพื่อนที่เก่ง ไม่ต้องเป็นทางการ\n`
+  context += `มีอารมณ์ขันเล็กน้อยได้ถ้า context เหมาะ แต่ไม่ลืมตรงประเด็น\n`
+  context += `ถ้าเห็นว่า approach ไหนดีกว่า บอกได้เลย — ไม่ต้องถามทุกครั้ง\n\n`
+  context += `## การตอบ\n`
+  context += `- ภาษาไทยเป็นหลัก ปนอังกฤษได้สำหรับ tech term\n`
+  context += `- สั้นและตรงประเด็น ไม่ต้อง intro/outro ยาว\n`
+  context += `- Code: ใส่ code block เสมอ copy-paste ได้เลย\n`
+  context += `- ถ้าไม่มีข้อมูลใน memory: บอกตรงๆ ว่า "ยังไม่มีข้อมูลส่วนนี้ใน memory นะ" — ไม่เดา ไม่แต่งเรื่อง\n\n`
   context += `## AI Fleet ที่ใช้งานได้\n`
   context += `- Hermes (local/free) — chat ทั่วไป, task เบา\n`
   context += `- Claude Haiku (api) — chat เร็ว, คำตอบสั้น\n`
@@ -190,60 +234,107 @@ export async function buildContext(userMessage: string): Promise<string> {
 
   if (jackMemories.length > 0) {
     context += `## Jack's Profile & Preferences\n`
-    jackMemories.forEach(m => { context += `- ${m.content}\n` })
+    jackMemories.forEach((m: any) => { context += `- ${m.content}\n` })
     context += '\n'
   }
 
   if (projectInfo.length > 0) {
     context += `## Project Context\n`
     projectInfo.forEach((p: any) => {
-      context += `**${p.name}**: ${p.description}\n`
-      context += `Stack: ${JSON.stringify(p.stack)}\n`
+      context += `**${p.name}** (${p.project_id}): ${p.description ?? ''}\n`
+      if (p.stack?.length > 0) context += `Stack: ${JSON.stringify(p.stack)}\n`
       if (p.golden_rules?.length > 0) {
-        context += `Rules:\n`
-        p.golden_rules.forEach((r: string) => { context += `  - ${r}\n` })
+        context += `Rules: ${p.golden_rules.map((r: string) => `• ${r}`).join(' ')}\n`
       }
       context += '\n'
     })
   }
 
-  if (projectMemories.length > 0) {
-    context += `## Project Memories\n`
-    projectMemories.forEach(m => { context += `- [${m.category}] ${m.content}\n` })
+  if (allProjectMemories.length > 0) {
+    context += `## Project Memories${isMultiProject ? ` (${projectMentions.join(', ')})` : ''}\n`
+    allProjectMemories.forEach((m: any) => {
+      const proj = isMultiProject && m.projectId ? ` [${m.projectId}]` : ''
+      context += `- [${m.category}]${proj} ${m.content}\n`
+    })
     context += '\n'
+  } else if (projectMentions.length === 0) {
+    // ไม่เจอ project mention → semantic search ข้ามทุก scope เพื่อ catch project ใหม่
+    const broadMemories = await recallMemories(userMessage, { limit: 8, minImportance: 6 })
+    const projectRelated = broadMemories.filter((m: any) => m.projectId)
+    if (projectRelated.length > 0) {
+      context += `## Related Memories\n`
+      projectRelated.forEach((m: any) => {
+        context += `- [${m.category}][${m.projectId}] ${m.content}\n`
+      })
+      context += '\n'
+    }
   }
 
   return context
 }
 
 // ─── HELPERS ───
-function detectProjectMentions(text: string): string[] {
-  const projectKeywords: Record<string, string> = {
-    'joyride': 'joyride',
-    'joy ride': 'joyride',
-    'boonma': 'boonma',
-    'บุญมา': 'boonma',
-    'sabaidee': 'sabaidee',
-    'สบายดี': 'sabaidee',
-    'phimai': 'sabaidee',
-    'พิมาย': 'sabaidee',
-    'pawfect': 'pawfect',
-    'neo': 'neo',
+
+// Cache project keywords จาก DB — refresh ทุก 1 นาที
+let _projectKeywordCache: Array<{ projectId: string; keywords: string[] }> = []
+let _projectKeywordCacheTime = 0
+
+export function invalidateProjectCache() {
+  _projectKeywordCacheTime = 0
+}
+
+async function getProjectKeywords(): Promise<Array<{ projectId: string; keywords: string[] }>> {
+  if (Date.now() - _projectKeywordCacheTime < 60 * 1000 && _projectKeywordCache.length > 0) {
+    return _projectKeywordCache
   }
+  try {
+    const result = await db.query(
+      `SELECT project_id, name FROM neo_projects WHERE status = 'active' OR status IS NULL`
+    )
+    _projectKeywordCache = result.rows.map((r: any) => ({
+      projectId: r.project_id,
+      keywords: [
+        r.project_id.toLowerCase(),
+        r.name?.toLowerCase(),
+      ].filter(Boolean),
+    }))
+    _projectKeywordCacheTime = Date.now()
+  } catch {
+    // fallback ถ้า DB ล้ม
+    _projectKeywordCache = [
+      { projectId: 'joyride',   keywords: ['joyride', 'joy ride'] },
+      { projectId: 'boonma',    keywords: ['boonma', 'บุญมา'] },
+      { projectId: 'sabaidee',  keywords: ['sabaidee', 'สบายดี'] },
+      { projectId: 'pawfect',   keywords: ['pawfect'] },
+      { projectId: 'neo',       keywords: ['neo'] },
+      { projectId: 'z-vision',  keywords: ['z-vision', 'zvision', 'z vision'] },
+      { projectId: 'scp',       keywords: ['scp', 'server control'] },
+    ]
+  }
+  return _projectKeywordCache
+}
 
-  const found: string[] = []
+async function detectProjectMentions(text: string): Promise<string[]> {
+  const projects = await getProjectKeywords()
   const lowerText = text.toLowerCase()
+  const found: string[] = []
 
-  for (const [keyword, projectId] of Object.entries(projectKeywords)) {
-    if (lowerText.includes(keyword) && !found.includes(projectId)) {
+  for (const { projectId, keywords } of projects) {
+    if (keywords.some(k => k && lowerText.includes(k)) && !found.includes(projectId)) {
       found.push(projectId)
     }
+  }
+
+  // ถ้าถามเรื่อง cross-project → คืนทุก project
+  if (/ทุกโปรเจ็ค|ทั้งหมด|all projects|ภาพรวม|overview|เปรียบเทียบ|compare|โปรเจ็คอะไรบ้าง|มีโปรเจ็ค|project.*list|list.*project/.test(lowerText)) {
+    return projects.map(p => p.projectId)
   }
 
   return found
 }
 
 async function generateEmbedding(text: string): Promise<number[]> {
+  if (!text.trim()) return new Array(1536).fill(0)
   try {
     const OpenAI = (await import('openai')).default
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })

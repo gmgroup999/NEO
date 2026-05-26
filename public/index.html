@@ -397,15 +397,22 @@ body::after {
   display: block;
 }
 
-.img-overlay {
+.img-download-btn {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  padding: 8px 12px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.7));
-  font-size: 10px;
-  font-family: 'IBM Plex Mono', monospace;
-  color: rgba(255,255,255,0.6);
+  top: 8px; right: 8px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
 }
+
+.img-bubble:hover .img-download-btn { opacity: 1; }
 
 /* Meta row */
 .msg-meta {
@@ -536,13 +543,207 @@ body::after {
   color: var(--text);
 }
 
-.qa-btn.image {
-  color: var(--dalle);
-  border-color: rgba(244,114,182,0.2);
-  background: rgba(244,114,182,0.05);
+/* ── CRON JOBS ── */
+.cron-label {
+  font-size: 10px;
+  letter-spacing: .8px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
-.qa-btn.image:hover { background: rgba(244,114,182,0.1); }
+.cron-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border 0.15s;
+  box-sizing: border-box;
+}
+.cron-input:focus { border-color: var(--accent); }
+textarea.cron-input { resize: vertical; min-height: 60px; }
+select.cron-input { cursor: pointer; }
+
+.cron-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border 0.15s;
+}
+.cron-card:hover { border-color: var(--border2); }
+.cron-card.disabled { opacity: .5; }
+
+.cron-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.cron-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.cron-name {
+  font-weight: 500;
+  font-size: 13px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cron-card-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.cron-act-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 2px 7px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.cron-act-btn:hover { color: var(--text); border-color: var(--border2); }
+.cron-act-btn.run:hover { color: var(--hermes); border-color: rgba(16,185,129,.3); }
+.cron-act-btn.edit:hover { color: var(--accent); border-color: rgba(0,229,255,.3); }
+.cron-act-btn.del:hover { color: var(--deepseek); border-color: rgba(239,68,68,.3); }
+.cron-act-btn.tog-on { color: var(--hermes); border-color: rgba(16,185,129,.3); background: rgba(16,185,129,.08); }
+.cron-act-btn.tog-off { color: var(--muted2); }
+
+.cron-card-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+
+.cron-card-status {
+  font-size: 11px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.cron-card-preview {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 7px 10px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+  margin-top: 6px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 80px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ch-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ch-row input {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 5px 8px;
+  outline: none;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.ch-row input:focus { border-color: var(--accent); }
+.ch-row button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 5px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.ch-row button:hover { color: var(--deepseek); border-color: rgba(239,68,68,.3); }
+
+.qa-btn.image {
+  color: var(--gemini);
+  border-color: rgba(66,133,244,0.2);
+  background: rgba(66,133,244,0.05);
+  padding: 0;
+  display: flex;
+  overflow: visible;
+  position: relative;
+}
+
+.img-btn-main {
+  padding: 4px 8px 4px 10px;
+  cursor: pointer;
+}
+
+.img-btn-arrow {
+  padding: 4px 8px;
+  border-left: 1px solid rgba(66,133,244,0.2);
+  cursor: pointer;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+}
+
+.qa-btn.image:hover { background: rgba(66,133,244,0.1); }
+
+.img-provider-menu {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  min-width: 190px;
+  z-index: 200;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.img-provider-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.1s;
+}
+
+.img-provider-item:hover { background: rgba(255,255,255,0.05); }
+.img-provider-item.active { color: var(--gemini); }
+.img-provider-item.active.openai-active { color: var(--gpt); }
+.img-provider-item.active-size { color: var(--accent); }
 
 .input-wrap {
   display: flex;
@@ -1017,6 +1218,36 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
 .tts-btn:hover { color: var(--accent); background: rgba(0,229,255,0.07); }
 .tts-btn.speaking { color: var(--accent); animation: tts-pulse 1s ease-in-out infinite; }
 
+.feedback-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s, opacity 0.15s;
+  vertical-align: middle;
+  margin-left: 2px;
+  opacity: 0.45;
+}
+.feedback-btn:hover { opacity: 1; background: rgba(255,255,255,0.05); }
+.feedback-btn.active { opacity: 1; }
+.feedback-btn.active[data-vote="up"]   { color: #10b981; }
+.feedback-btn.active[data-vote="down"] { color: #ef4444; }
+
+.stream-cursor {
+  display: inline-block;
+  animation: stream-blink 0.6s step-end infinite;
+  color: var(--accent, #7c3aed);
+  font-weight: bold;
+}
+@keyframes stream-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 .tts-toggle {
   display: flex;
   align-items: center;
@@ -1047,6 +1278,20 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
   min-width: 26px;
   color: var(--accent);
   font-weight: 500;
+}
+
+.voice-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.1s;
+  margin-bottom: 2px;
+}
+.voice-row:hover { background: rgba(255,255,255,0.04); }
+.voice-row.voice-selected { background: rgba(0,229,255,0.07); border: 1px solid rgba(0,229,255,0.15); }
 }
 
 @keyframes tts-pulse {
@@ -1543,37 +1788,8 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
   </div>
 
   <div class="section-label">Projects</div>
-  <div class="project-list">
-    <div class="project-item active">
-      <div class="pdot" style="background:#60a5fa"></div>
-      <div class="pname">JoyRide</div>
-      <div class="pstatus">active</div>
-    </div>
-    <div class="project-item">
-      <div class="pdot" style="background:#fb923c"></div>
-      <div class="pname">boonma paper</div>
-      <div class="pstatus">active</div>
-    </div>
-    <div class="project-item">
-      <div class="pdot" style="background:#10b981"></div>
-      <div class="pname">sabaidee.cc</div>
-      <div class="pstatus">build</div>
-    </div>
-    <div class="project-item">
-      <div class="pdot" style="background:#a78bfa"></div>
-      <div class="pname">Pawfect Passport</div>
-      <div class="pstatus">plan</div>
-    </div>
-    <div class="project-item">
-      <div class="pdot" style="background:#fbbf24"></div>
-      <div class="pname">เณรน้อยธรรมะ</div>
-      <div class="pstatus">active</div>
-    </div>
-    <div class="project-item">
-      <div class="pdot" style="background:#00e5ff"></div>
-      <div class="pname">NEO</div>
-      <div class="pstatus">build</div>
-    </div>
+  <div class="project-list" id="sidebar-projects">
+    <div style="color:var(--muted);font-size:10px;padding:8px 12px;font-family:'IBM Plex Mono',monospace">Loading...</div>
   </div>
 
   <div class="section-label">AI Fleet</div>
@@ -1594,8 +1810,8 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
       <div class="fleet-tag">api</div>
     </div>
     <div class="fleet-item">
-      <div class="fleet-dot" style="background:var(--dalle);animation-delay:.9s"></div>
-      <div class="fleet-name" style="color:var(--dalle)">DALL-E 3</div>
+      <div class="fleet-dot" style="background:var(--gemini);animation-delay:.9s"></div>
+      <div class="fleet-name" style="color:var(--gemini)">Gemini Imagen</div>
       <div class="fleet-tag">image</div>
     </div>
     <div class="fleet-item">
@@ -1643,10 +1859,11 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
       </div>
       <button onclick="toggleUsage()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📊 Usage</button>
       <button onclick="toggleHistory()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">💬 History</button>
-      <button onclick="toggleImport()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📚 Learn</button>
       <button onclick="toggleMemPanel()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">🧠 Memories</button>
       <button onclick="toggleReports()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📊 Reports</button>
       <button onclick="toggleSystem()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">🖥️ System</button>
+      <button onclick="toggleCrons()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">⏰ Crons</button>
+      <button onclick="requestDeploy()" id="deploy-btn" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'" title="Request deploy — sends Telegram notification">🚀 Deploy</button>
     </div>
   </div>
 
@@ -1675,7 +1892,28 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
       <div class="qa-btn" onclick="insertText('@gpt ')">@gpt</div>
       <div class="qa-btn" onclick="insertText('@gemini ')">@gemini</div>
       <div class="qa-btn" onclick="insertText('@deepseek ')">@deepseek</div>
-      <div class="qa-btn image" onclick="insertText('สร้างภาพ ')">🎨 สร้างภาพ</div>
+      <div class="qa-btn image" id="img-btn">
+        <span class="img-btn-main" onclick="insertText('สร้างภาพ ')">🎨 <span id="img-provider-label">Gemini Imagen</span></span>
+        <span class="img-btn-arrow" onclick="toggleImageMenu(event)">▼</span>
+        <div class="img-provider-menu" id="img-provider-menu">
+          <div class="img-provider-item active" id="img-opt-gemini" onclick="setImageProvider('gemini')">
+            <span>🌈</span><span>Gemini Imagen <small style="opacity:.5">(default)</small></span>
+          </div>
+          <div class="img-provider-item" id="img-opt-openai" onclick="setImageProvider('openai')">
+            <span>⚪</span><span>GPT Image-1 <small style="opacity:.5">(OpenAI)</small></span>
+          </div>
+          <div style="border-top:1px solid var(--border);margin:2px 0;padding:5px 12px 3px;font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em">RESOLUTION</div>
+          <div class="img-provider-item img-size-opt active-size" id="img-size-square" onclick="setImageSize('1024x1024')">
+            <span>⬛</span><span>Square <small style="opacity:.5">1024×1024</small></span>
+          </div>
+          <div class="img-provider-item img-size-opt" id="img-size-land" onclick="setImageSize('1536x1024')">
+            <span>▬</span><span>Landscape <small style="opacity:.5">1536×1024</small></span>
+          </div>
+          <div class="img-provider-item img-size-opt" id="img-size-port" onclick="setImageSize('1024x1536')">
+            <span>▮</span><span>Portrait <small style="opacity:.5">1024×1536</small></span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="img-preview-area" style="display:none;padding:0 2px 4px">
@@ -1690,6 +1928,9 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
       ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
       <button class="img-attach-btn" onclick="document.getElementById('file-input').click()" title="แนบรูป (หรือ Ctrl+V วางจาก clipboard)">📎</button>
       <input type="file" id="file-input" accept="image/*" style="display:none" onchange="onFileSelect(event)">
+      <button class="img-attach-btn" onclick="document.getElementById('video-file-input').click()" title="แนบวิดีโอเพื่อวิเคราะห์">🎬</button>
+      <input type="file" id="video-file-input" accept="video/*" style="display:none" onchange="onVideoFileSelect(event)">
+      <button class="img-attach-btn" id="camera-toggle-btn" onclick="toggleCamera()" title="กล้องถ่ายทอดสด">📷</button>
       <textarea
         id="inp"
         placeholder="คุยกับ NEO... วางรูปด้วย Ctrl+V หรือกด 📎"
@@ -1710,10 +1951,7 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
           <input type="checkbox" id="tts-auto" onchange="onTtsToggle(this)">
           🔊 auto-speak
         </label>
-        <select class="tts-voice-select" id="tts-voice" onchange="onVoiceChange(this)" title="TTS Voice">
-          <option value="female">♀ Female</option>
-          <option value="male">♂ Male</option>
-        </select>
+        <button id="voice-picker-btn" onclick="toggleVoicePicker()" title="เลือกเสียง ElevenLabs" style="background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.15);color:var(--accent);border-radius:6px;padding:3px 9px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap">🎙 <span id="voice-name-label">Rachel</span> ▾</button>
         <div class="tts-speed">
           <span>🐢</span>
           <input type="range" id="tts-speed" min="0.5" max="2.0" step="0.25" value="1.0" oninput="onSpeedChange(this)">
@@ -1730,7 +1968,76 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
 
 <script>
 let sessionId = crypto.randomUUID()
+
+// ─── Sidebar Projects ───
+const STATUS_COLOR = { active:'#60a5fa', build:'#10b981', plan:'#a78bfa', inactive:'#525270' }
+
+async function loadSidebarProjects() {
+  try {
+    const projects = await fetch('/api/projects').then(r => r.json())
+    const el = document.getElementById('sidebar-projects')
+    if (!el) return
+    el.innerHTML = projects.map(p => `
+      <div class="project-item" title="คลิกเพื่อตั้ง CLAUDE.md path" onclick="editClaudeMdPath('${p.project_id}','${escHtml(p.claude_md_path ?? '')}')">
+        <div class="pdot" style="background:${STATUS_COLOR[p.status] ?? '#525270'}"></div>
+        <div class="pname">${escHtml(p.name)}</div>
+        <div class="pstatus" style="display:flex;align-items:center;gap:4px">
+          ${p.status}${p.claude_md_path ? '<span style="color:var(--hermes);font-size:8px" title="มี claude_md_path">📌</span>' : ''}
+        </div>
+      </div>`).join('')
+  } catch { /* silent */ }
+}
+
+async function editClaudeMdPath(projectId, current) {
+  const path = prompt(`claude_md_path สำหรับ ${projectId}\n(เว้นว่างเพื่อ auto-detect)`, current)
+  if (path === null) return // cancelled
+  await fetch(`/api/projects/${projectId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ claude_md_path: path.trim() || null }),
+  })
+  loadSidebarProjects()
+}
+
+loadSidebarProjects()
 let attachedImage = null  // { base64: string, mime: string, name: string }
+let imageProvider = 'gemini'  // 'gemini' | 'openai'
+let imageSize = '1024x1024'
+
+// ─── Image provider picker ───
+function setImageProvider(provider) {
+  imageProvider = provider
+  const isGemini = provider === 'gemini'
+  document.getElementById('img-provider-label').textContent = isGemini ? 'Gemini Imagen' : 'GPT Image-1'
+  const btn = document.getElementById('img-btn')
+  btn.style.color = isGemini ? 'var(--gemini)' : 'var(--gpt)'
+  btn.style.borderColor = isGemini ? 'rgba(66,133,244,0.2)' : 'rgba(16,163,127,0.2)'
+  btn.style.background = isGemini ? 'rgba(66,133,244,0.05)' : 'rgba(16,163,127,0.05)'
+  document.getElementById('img-opt-gemini').className = 'img-provider-item' + (isGemini ? ' active' : '')
+  document.getElementById('img-opt-openai').className = 'img-provider-item' + (!isGemini ? ' active openai-active' : '')
+  document.getElementById('img-provider-menu').style.display = 'none'
+}
+
+function setImageSize(size) {
+  imageSize = size
+  document.querySelectorAll('.img-size-opt').forEach(el => el.classList.remove('active-size'))
+  const map = { '1024x1024': 'img-size-square', '1536x1024': 'img-size-land', '1024x1536': 'img-size-port' }
+  const el = document.getElementById(map[size])
+  if (el) el.classList.add('active-size')
+  document.getElementById('img-provider-menu').style.display = 'none'
+}
+
+function toggleImageMenu(e) {
+  e.stopPropagation()
+  const menu = document.getElementById('img-provider-menu')
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block'
+}
+
+// close menu when clicking outside
+document.addEventListener('click', () => {
+  const menu = document.getElementById('img-provider-menu')
+  if (menu) menu.style.display = 'none'
+})
 
 // ─── Image helpers ───
 function resizeImageToBase64(file, maxPx = 1280) {
@@ -1811,11 +2118,14 @@ async function onDrop(e) {
 let conversationHistory = []  // [{role:'user'|'assistant', content:'...'}]
 const MAX_HISTORY = 20  // keep last 20 turns (10 exchanges)
 
-// ─── TTS ───
+// ─── TTS — ElevenLabs ───
 let ttsAutoSpeak = false
-let ttsAudioQueue = []
-let ttsPlaying = false
-let ttsSpeed = 1.0
+let ttsPlaying   = false
+let ttsSpeed     = 1.0
+let ttsVoiceId   = localStorage.getItem('neoTtsVoiceId')   || '21m00Tcm4TlvDq8ikWAM'
+let ttsVoiceName = localStorage.getItem('neoTtsVoiceName') || 'Rachel'
+let allVoices    = []   // populated on first open
+let voicePickerOpen = false
 
 function onTtsToggle(el) {
   ttsAutoSpeak = el.checked
@@ -1830,9 +2140,6 @@ function onSpeedChange(el) {
 
 function ttsStop() {
   ttsPlaying = false
-  ttsAudioQueue = []
-  speechSynthesis.cancel()
-  // Stop any playing Audio elements
   document.querySelectorAll('.tts-audio').forEach(a => { a.pause(); a.remove() })
   document.querySelectorAll('.tts-btn').forEach(b => b.classList.remove('speaking'))
 }
@@ -1855,8 +2162,8 @@ function stripMarkdownForTts(text) {
     .trim()
 }
 
-// แบ่ง text ที่ยาวเป็น chunk ≤ 200 ตัว (ขีดจำกัด Google TTS)
-function splitChunks(text, max = 200) {
+// แบ่ง text เป็น chunk สำหรับ ElevenLabs (max 800 chars)
+function splitChunks(text, max = 800) {
   const chunks = []
   // แบ่งที่ sentence boundary ก่อน
   const sentences = text.split(/(?<=[.!?।।\n])\s+|(?<=[๏๚๛])\s*/)
@@ -1881,14 +2188,14 @@ function splitChunks(text, max = 200) {
   return chunks.filter(c => c.length > 0)
 }
 
-// Google TTS ผ่าน NEO proxy (หลีก CORS)
-async function speakGoogleTTS(text, lang, btnEl) {
-  const chunks = splitChunks(text)
+// ElevenLabs TTS ผ่าน NEO proxy
+async function speakElevenLabs(text, btnEl) {
+  const chunks = splitChunks(text, 800)
   ttsPlaying = true
 
   for (const chunk of chunks) {
     if (!ttsPlaying) break
-    const url = `/api/tts?lang=${lang}&text=${encodeURIComponent(chunk)}`
+    const url = `/api/tts?voiceId=${encodeURIComponent(ttsVoiceId)}&text=${encodeURIComponent(chunk)}`
     await new Promise(resolve => {
       const audio = new Audio(url)
       audio.className = 'tts-audio'
@@ -1904,51 +2211,251 @@ async function speakGoogleTTS(text, lang, btnEl) {
   if (btnEl) btnEl.classList.remove('speaking')
 }
 
-// Web Speech API — สำหรับ English (ถ้าไม่มี Thai voice)
-function speakWebSpeech(text, btnEl) {
-  if (!('speechSynthesis' in window)) return
-  speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'en-US'
-  u.rate = ttsSpeed
-  if (btnEl) {
-    u.onend = () => btnEl.classList.remove('speaking')
-    u.onerror = () => btnEl.classList.remove('speaking')
-  }
-  speechSynthesis.speak(u)
-}
-
 async function speak(text, btnEl) {
   ttsStop()
   const clean = stripMarkdownForTts(text)
   if (!clean) return
   if (btnEl) btnEl.classList.add('speaking')
+  await speakElevenLabs(clean, btnEl)
+}
 
-  const voiceMode = (typeof ttsVoiceMode !== 'undefined') ? ttsVoiceMode : 'female'
+// ─── Camera / Live Analysis ───
+let cameraStream = null
+let camAutoTimer = null
+let camOpen = false
 
-  if (voiceMode === 'male' && 'speechSynthesis' in window) {
-    speechSynthesis.cancel()
-    const u = new SpeechSynthesisUtterance(clean)
-    u.lang = 'th-TH'
-    u.pitch = 0.7
-    u.rate = ttsSpeed
-    const voices = speechSynthesis.getVoices()
-    const thVoice = voices.find(v => v.lang.startsWith('th'))
-    if (thVoice) u.voice = thVoice
-    if (btnEl) {
-      u.onend = () => { ttsPlaying = false; btnEl.classList.remove('speaking') }
-      u.onerror = () => { ttsPlaying = false; btnEl.classList.remove('speaking') }
-    }
-    ttsPlaying = true
-    speechSynthesis.speak(u)
-  } else if (hasThai(clean)) {
-    await speakGoogleTTS(clean, 'th', btnEl)
-  } else {
-    speakWebSpeech(clean, btnEl)
+function toggleCamera() {
+  camOpen = !camOpen
+  const panel = document.getElementById('camera-panel')
+  panel.style.display = camOpen ? 'block' : 'none'
+  if (!camOpen) stopCamera()
+}
+
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    const video = document.getElementById('cam-video')
+    video.srcObject = cameraStream
+    document.getElementById('cam-overlay').style.display = 'none'
+    document.getElementById('cam-start-btn').textContent = '⏹ Stop'
+    document.getElementById('cam-start-btn').onclick = stopCamera
+    document.getElementById('cam-capture-btn').disabled = false
+    document.getElementById('cam-auto-btn').disabled = false
+    document.getElementById('cam-status').textContent = 'กล้องเปิดแล้ว'
+    document.getElementById('camera-toggle-btn').style.color = 'var(--accent)'
+  } catch (e) {
+    showToast('ไม่สามารถเปิดกล้องได้: ' + e.message)
   }
 }
 
-speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices()
+function stopCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null }
+  stopAutoCapture()
+  const video = document.getElementById('cam-video')
+  video.srcObject = null
+  document.getElementById('cam-overlay').style.display = 'flex'
+  document.getElementById('cam-start-btn').textContent = '▶ Start'
+  document.getElementById('cam-start-btn').onclick = startCamera
+  document.getElementById('cam-capture-btn').disabled = true
+  document.getElementById('cam-auto-btn').disabled = true
+  document.getElementById('cam-status').textContent = 'กด Start เพื่อเริ่ม'
+  document.getElementById('camera-toggle-btn').style.color = ''
+}
+
+async function captureFrame() {
+  const video  = document.getElementById('cam-video')
+  const canvas = document.getElementById('cam-canvas')
+  canvas.width  = video.videoWidth
+  canvas.height = video.videoHeight
+  canvas.getContext('2d').drawImage(video, 0, 0)
+  const frameBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
+  const prompt = document.getElementById('cam-prompt').value.trim() || 'อธิบายสิ่งที่เห็นในภาพนี้ให้ละเอียด เน้นประเด็นสำคัญ'
+
+  document.getElementById('cam-status').textContent = '🔍 กำลังวิเคราะห์...'
+  try {
+    const res = await fetch('/api/analyze-frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frameBase64, prompt, sessionId: currentSession })
+    })
+    const data = await res.json()
+    if (data.content) {
+      addMsg(`<div class="msg user"><div class="avatar user">J</div><div class="msg-body"><div class="bubble">📷 [Live Frame] ${escHtml(prompt.slice(0,60))}</div></div></div>`)
+      renderTextResponse({ content: data.content, model: data.model, costUsd: data.costUsd ?? 0, latencyMs: 0, routedBy: 'manual' })
+    }
+    document.getElementById('cam-status').textContent = `✅ วิเคราะห์แล้ว ($${data.costUsd?.toFixed(5)})`
+  } catch (e) {
+    document.getElementById('cam-status').textContent = '❌ เกิดข้อผิดพลาด'
+    showToast('Camera analysis error: ' + e.message)
+  }
+}
+
+function toggleAutoCapture() {
+  const btn = document.getElementById('cam-auto-btn')
+  if (camAutoTimer) {
+    stopAutoCapture()
+    btn.textContent = '⏱ Auto'
+    btn.style.color = 'var(--muted)'
+  } else {
+    const interval = parseInt(document.getElementById('cam-interval').value)
+    if (!interval) return showToast('เลือก interval ก่อนครับ')
+    camAutoTimer = setInterval(captureFrame, interval)
+    btn.textContent = '⏹ Stop Auto'
+    btn.style.color = 'var(--accent)'
+    document.getElementById('cam-status').textContent = `⏱ Auto ทุก ${interval/1000} วิ`
+  }
+}
+
+function stopAutoCapture() {
+  if (camAutoTimer) { clearInterval(camAutoTimer); camAutoTimer = null }
+}
+
+// ─── Video File Upload & Analysis ───
+async function onVideoFileSelect(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  e.target.value = ''
+
+  const maxSize = 200 * 1024 * 1024
+  if (file.size > maxSize) return showToast('ไฟล์ใหญ่เกิน 200MB ครับ')
+
+  const prompt = window.prompt('ต้องการวิเคราะห์อะไรจากวิดีโอนี้?', 'วิเคราะห์วิดีโอนี้ สรุปเนื้อหา ประเด็นสำคัญ และ key insights เป็นภาษาไทย') ?? ''
+
+  const bar = document.getElementById('video-upload-bar')
+  const status = document.getElementById('video-upload-status')
+  const progress = document.getElementById('video-upload-progress')
+  bar.style.display = 'block'
+  status.textContent = `กำลังอัปโหลด: ${file.name} (${(file.size/1024/1024).toFixed(1)} MB)`
+  progress.style.width = '30%'
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    status.textContent = 'กำลังส่งให้ Gemini วิเคราะห์...'
+    progress.style.width = '60%'
+
+    const res = await fetch(`/api/analyze-video?prompt=${encodeURIComponent(prompt)}`, {
+      method: 'POST',
+      body: formData
+    })
+    progress.style.width = '100%'
+    const data = await res.json()
+    bar.style.display = 'none'
+    progress.style.width = '0%'
+
+    if (!res.ok) return showToast('Error: ' + (data.error || 'unknown'))
+    addMsg(`<div class="msg user"><div class="avatar user">J</div><div class="msg-body"><div class="bubble">🎬 วิเคราะห์วิดีโอ: ${escHtml(file.name)}</div></div></div>`)
+    renderTextResponse({ content: data.content, model: data.model, costUsd: data.costUsd ?? 0, latencyMs: 0, routedBy: 'manual' })
+  } catch (err) {
+    bar.style.display = 'none'
+    showToast('Video upload error: ' + err.message)
+  }
+}
+
+// ─── Voice Picker ───
+function toggleVoicePicker() {
+  voicePickerOpen = !voicePickerOpen
+  const panel = document.getElementById('voice-picker-panel')
+  panel.style.display = voicePickerOpen ? 'flex' : 'none'
+  if (voicePickerOpen && !allVoices.length) loadVoices()
+}
+
+async function loadVoices() {
+  document.getElementById('voice-list').innerHTML =
+    '<div style="color:var(--muted);text-align:center;padding:20px;font-size:12px">กำลังโหลด...</div>'
+  try {
+    const r = await fetch('/api/tts/voices')
+    allVoices = await r.json()
+    if (!allVoices.length) {
+      document.getElementById('voice-list').innerHTML =
+        '<div style="color:var(--muted);text-align:center;padding:20px;font-size:12px">ไม่พบ voices</div>'
+      return
+    }
+    renderVoices(allVoices)
+  } catch (e) {
+    document.getElementById('voice-list').innerHTML =
+      `<div style="color:var(--deepseek);text-align:center;padding:20px;font-size:12px">❌ โหลดไม่ได้: ${e.message}</div>`
+  }
+}
+
+function filterVoices(query) {
+  if (!allVoices.length) return
+  const q = query.toLowerCase()
+  const filtered = q ? allVoices.filter(v =>
+    v.name.toLowerCase().includes(q) ||
+    Object.values(v.labels || {}).some(l => String(l).toLowerCase().includes(q))
+  ) : allVoices
+  renderVoices(filtered)
+}
+
+function renderVoices(voices) {
+  const el = document.getElementById('voice-list')
+  // Group: Google Thai first, then ElevenLabs
+  const googleVoices = voices.filter(v => v.category === 'google')
+  const elevenVoices = voices.filter(v => v.category !== 'google')
+  const grouped = []
+  if (googleVoices.length) {
+    grouped.push(`<div style="padding:6px 10px 3px;font-size:10px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">🇹🇭 Google Thai Voices</div>`)
+    grouped.push(...googleVoices.map(v => voiceRow(v)))
+  }
+  if (elevenVoices.length) {
+    grouped.push(`<div style="padding:6px 10px 3px;font-size:10px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">⚡ ElevenLabs Voices</div>`)
+    grouped.push(...elevenVoices.map(v => voiceRow(v)))
+  }
+  el.innerHTML = grouped.join('')
+}
+
+function voiceRow(v) {
+  const isSelected = v.id === ttsVoiceId
+  const isGoogle = v.category === 'google'
+  const labels = Object.entries(v.labels || {})
+    .filter(([k]) => k !== 'language')
+    .map(([k, val]) => `<span style="background:${isGoogle ? 'rgba(66,133,244,0.15)' : 'rgba(255,255,255,0.06)'};border-radius:4px;padding:1px 6px;font-size:10px">${val}</span>`)
+    .join(' ')
+  return `<div class="voice-row ${isSelected ? 'voice-selected' : ''}" onclick="selectVoice('${v.id}','${escHtml(v.name)}')">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;overflow:hidden">
+      <span style="width:7px;height:7px;border-radius:50%;background:${isSelected ? 'var(--accent)' : 'var(--muted2)'};flex-shrink:0"></span>
+      <span style="font-size:12px;font-weight:${isSelected ? '600' : '400'};color:${isSelected ? 'var(--accent)' : 'var(--text)'}">${escHtml(v.name)}</span>
+      <span style="display:flex;gap:3px;flex-wrap:wrap;overflow:hidden">${labels}</span>
+    </div>
+    ${v.previewUrl ? `<button onclick="previewVoice(event,'${escHtml(v.previewUrl)}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;flex-shrink:0">▶</button>` : ''}
+  </div>`
+}
+
+function selectVoice(id, name) {
+  ttsVoiceId   = id
+  ttsVoiceName = name
+  localStorage.setItem('neoTtsVoiceId', id)
+  localStorage.setItem('neoTtsVoiceName', name)
+  document.getElementById('voice-name-label').textContent = name
+  renderVoices(allVoices.filter(v => {
+    const q = document.getElementById('voice-search')?.value?.toLowerCase() ?? ''
+    return !q || v.name.toLowerCase().includes(q) || Object.values(v.labels || {}).some(l => String(l).toLowerCase().includes(q))
+  }))
+  showToast(`🎙 เลือกเสียง: ${name}`)
+}
+
+let previewAudio = null
+function previewVoice(e, url) {
+  e.stopPropagation()
+  if (previewAudio) { previewAudio.pause(); previewAudio = null }
+  previewAudio = new Audio(url)
+  previewAudio.play().catch(() => {})
+}
+
+// Close voice picker on outside click
+document.addEventListener('click', e => {
+  if (!voicePickerOpen) return
+  const panel = document.getElementById('voice-picker-panel')
+  const btn   = document.getElementById('voice-picker-btn')
+  if (panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
+    voicePickerOpen = false
+    panel.style.display = 'none'
+  }
+})
+
+// Init voice label from localStorage
+document.getElementById('voice-name-label').textContent = ttsVoiceName
 
 const modelBadge = {
   'hermes':        { cls: 'badge-hermes',   label: 'Qwen 2.5 · local' },
@@ -2012,11 +2519,12 @@ function hideTyping() {
   document.getElementById('typing').style.display = 'none'
 }
 
-function renderTextResponse(data) {
+function renderTextResponse(data, userMessage = '') {
   const badge = modelBadge[data.model] ?? { cls: 'badge-hermes', label: data.model }
   const cost = data.costUsd === 0 ? '$0.00' : `$${data.costUsd.toFixed(5)}`
   const routeTag = data.routedBy === 'manual' ? ' · manual' : ''
   const msgId = 'msg-' + Math.random().toString(36).slice(2, 8)
+  _feedbackStore.set(msgId, { userMessage, aiResponse: data.content })
   addMsg(`
     <div class="msg neo" id="${msgId}">
       <div class="avatar neo">N</div>
@@ -2026,6 +2534,8 @@ function renderTextResponse(data) {
           <span class="model-badge ${badge.cls}">${badge.label}${routeTag}</span>
           <span class="meta-cost">${cost} · ⚡${data.latencyMs}ms</span>
           <button class="tts-btn" title="อ่านออกเสียง" onclick="ttsClick(this,'${msgId}')">🔊</button>
+          <button class="feedback-btn" data-msg="${msgId}" data-vote="up" onclick="sendFeedback('${msgId}','up')" title="คำตอบดี">👍</button>
+          <button class="feedback-btn" data-msg="${msgId}" data-vote="down" onclick="sendFeedback('${msgId}','down')" title="ปรับปรุงได้">👎</button>
         </div>
       </div>
     </div>
@@ -2044,18 +2554,58 @@ function ttsClick(btn, msgId) {
   speak(bubble?.innerText ?? '', btn)
 }
 
+async function sendFeedback(msgId, vote) {
+  const fb = _feedbackStore.get(msgId)
+  document.querySelectorAll(`[data-msg="${msgId}"].feedback-btn`).forEach(btn => {
+    btn.classList.remove('active')
+    if (btn.dataset.vote === vote) btn.classList.add('active')
+  })
+  try {
+    await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        userMessage: fb?.userMessage ?? '',
+        aiResponse: fb?.aiResponse ?? '',
+        rating: vote,
+      }),
+    })
+  } catch { /* UI already updated — silent fail */ }
+}
+
+const _imgStore = new Map()
+const _feedbackStore = new Map()
+
+function downloadImage(imgId) {
+  const url = _imgStore.get(imgId)
+  if (!url) return
+  const ext = url.startsWith('data:image/png') ? 'png' : url.startsWith('data:image/webp') ? 'webp' : 'jpg'
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `neo-image-${Date.now()}.${ext}`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
 function renderImageResponse(data) {
+  const isGemini = data.provider === 'gemini'
+  const providerLabel = isGemini ? 'Gemini Imagen' : 'GPT Image-1'
+  const badgeCls = isGemini ? 'badge-gemini' : 'badge-gpt'
+  const imgId = 'img-' + Date.now()
+  _imgStore.set(imgId, data.imageUrl)
   addMsg(`
     <div class="msg neo">
       <div class="avatar neo">N</div>
       <div class="msg-body">
-        <div class="bubble">สร้างภาพด้วย DALL-E 3 เสร็จแล้วครับ 🎨</div>
+        <div class="bubble">สร้างภาพด้วย ${providerLabel} เสร็จแล้วครับ 🎨</div>
         <div class="img-bubble">
           <img src="${data.imageUrl}" alt="Generated image" loading="lazy"/>
-          <div class="img-overlay">DALL-E 3 · 1024×1024</div>
+          <button class="img-download-btn" onclick="downloadImage('${imgId}')" title="ดาวน์โหลด">⬇</button>
         </div>
         <div class="msg-meta" style="margin-top:8px">
-          <span class="model-badge badge-dalle">DALL-E 3 · image</span>
+          <span class="model-badge ${badgeCls}">${providerLabel} · image</span>
           <span class="meta-cost">$${data.costUsd.toFixed(3)}</span>
         </div>
       </div>
@@ -2091,15 +2641,14 @@ async function send() {
     </div>
   `)
 
-  const imgToSend = attachedImage  // capture ก่อน clear
-
+  const imgToSend = attachedImage
   inp.value = ''
   inp.style.height = 'auto'
   clearImage()
   showTyping()
 
   try {
-    const res = await fetch('/api/chat', {
+    const res = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2108,34 +2657,104 @@ async function send() {
         history: conversationHistory,
         imageBase64: imgToSend?.base64 ?? undefined,
         imageMime: imgToSend?.mime ?? undefined,
+        imageProvider,
+        imageSize,
       }),
     })
 
-    hideTyping()
-
     if (!res.ok) {
+      hideTyping()
       const err = await res.json().catch(() => ({}))
       renderError(err.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
       return
     }
 
-    const data = await res.json()
-    sessionId = data.sessionId ?? sessionId
+    const msgId = 'msg-' + Math.random().toString(36).slice(2, 8)
+    let streamContent = ''
+    let bubbleAdded = false
 
-    if (data.type === 'image') {
-      renderImageResponse(data)
-      // Image responses: just push a note into history so context is preserved
-      conversationHistory.push({ role: 'user', content: text })
-      conversationHistory.push({ role: 'assistant', content: `[สร้างภาพ: ${data.revisedPrompt ?? text}]` })
-    } else {
-      renderTextResponse(data)
-      conversationHistory.push({ role: 'user', content: text })
-      conversationHistory.push({ role: 'assistant', content: data.content })
+    function ensureBubble() {
+      if (bubbleAdded) return
+      bubbleAdded = true
+      hideTyping()
+      addMsg(`
+        <div class="msg neo" id="${msgId}">
+          <div class="avatar neo">N</div>
+          <div class="msg-body">
+            <div class="bubble markdown-body" id="${msgId}-bubble"><span class="stream-cursor">▋</span></div>
+            <div class="msg-meta" id="${msgId}-meta" style="display:none"></div>
+          </div>
+        </div>
+      `)
     }
 
-    // Keep history bounded
-    if (conversationHistory.length > MAX_HISTORY) {
-      conversationHistory = conversationHistory.slice(-MAX_HISTORY)
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buf = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += decoder.decode(value, { stream: true })
+      const lines = buf.split('\n')
+      buf = lines.pop() ?? ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        try {
+          const ev = JSON.parse(line.slice(6))
+
+          if (ev.type === 'token') {
+            ensureBubble()
+            streamContent += ev.token
+            const el = document.getElementById(`${msgId}-bubble`)
+            if (el) {
+              el.innerHTML = renderMarkdown(streamContent) + '<span class="stream-cursor">▋</span>'
+              document.getElementById('messages').scrollTop = 99999
+            }
+
+          } else if (ev.type === 'done') {
+            ensureBubble()
+            sessionId = ev.sessionId ?? sessionId
+            const bubbleEl = document.getElementById(`${msgId}-bubble`)
+            const metaEl   = document.getElementById(`${msgId}-meta`)
+            if (bubbleEl) bubbleEl.innerHTML = renderMarkdown(streamContent)
+            if (metaEl) {
+              const badge    = modelBadge[ev.model] ?? { cls: 'badge-hermes', label: ev.model }
+              const cost     = ev.costUsd === 0 ? '$0.00' : `$${ev.costUsd.toFixed(5)}`
+              const routeTag = ev.routedBy === 'manual' ? ' · manual' : ''
+              metaEl.innerHTML = `
+                <span class="model-badge ${badge.cls}">${badge.label}${routeTag}</span>
+                <span class="meta-cost">${cost} · ⚡${ev.latencyMs}ms</span>
+                <button class="tts-btn" title="อ่านออกเสียง" onclick="ttsClick(this,'${msgId}')">🔊</button>
+                <button class="feedback-btn" data-msg="${msgId}" data-vote="up" onclick="sendFeedback('${msgId}','up')" title="คำตอบดี">👍</button>
+                <button class="feedback-btn" data-msg="${msgId}" data-vote="down" onclick="sendFeedback('${msgId}','down')" title="ปรับปรุงได้">👎</button>
+              `
+              metaEl.style.display = ''
+            }
+            _feedbackStore.set(msgId, { userMessage: text, aiResponse: streamContent })
+            conversationHistory.push({ role: 'user', content: text })
+            conversationHistory.push({ role: 'assistant', content: streamContent })
+            if (conversationHistory.length > MAX_HISTORY) conversationHistory = conversationHistory.slice(-MAX_HISTORY)
+            if (ttsAutoSpeak && metaEl) speak(streamContent, metaEl.querySelector('.tts-btn'))
+            if (historyOpen) setTimeout(() => loadHistory(true), 500)
+
+          } else if (ev.type === 'image') {
+            hideTyping()
+            sessionId = ev.sessionId ?? sessionId
+            renderImageResponse(ev)
+            conversationHistory.push({ role: 'user', content: text })
+            conversationHistory.push({ role: 'assistant', content: `[สร้างภาพ: ${ev.revisedPrompt ?? text}]` })
+            if (conversationHistory.length > MAX_HISTORY) conversationHistory = conversationHistory.slice(-MAX_HISTORY)
+            if (historyOpen) setTimeout(() => loadHistory(true), 500)
+
+          } else if (ev.type === 'error') {
+            hideTyping()
+            if (bubbleAdded) document.getElementById(msgId)?.remove()
+            renderError(ev.error)
+          }
+        } catch {}
+      }
     }
   } catch (e) {
     hideTyping()
@@ -2164,7 +2783,7 @@ async function loadStatus(isFirst = false) {
         <div class="msg neo">
           <div class="avatar neo">N</div>
           <div class="msg-body">
-            <div class="bubble">สวัสดีครับ Jack — NEO พร้อมแล้ว 🧠<br>จำ <strong>${data.memories} memories</strong> · ${data.activeProjects} projects active<br>คุยได้เลย หรือพิมพ์ <strong style="color:var(--dalle)">สร้างภาพ...</strong> เพื่อสร้างรูปครับ</div>
+            <div class="bubble">สวัสดีครับ Jack — NEO พร้อมแล้ว 🧠<br>จำ <strong>${data.memories} memories</strong> · ${data.activeProjects} projects active<br>คุยได้เลย หรือพิมพ์ <strong style="color:var(--gemini)">สร้างภาพ...</strong> เพื่อสร้างรูปครับ</div>
             <div class="msg-meta">
               <span class="model-badge badge-hermes">Qwen 2.5 · local</span>
               <span class="meta-cost">$0.00</span>
@@ -2233,6 +2852,47 @@ function showToast(event) {
   }
 }
 
+function showCostAlert(todayCost, threshold) {
+  const toast = document.createElement('div')
+  toast.style.cssText = `
+    position:fixed; bottom:90px; right:20px;
+    background:#1a0d0d; border:1px solid rgba(239,68,68,0.5);
+    border-radius:10px; padding:12px 16px; z-index:999;
+    font-family:'IBM Plex Mono',monospace; font-size:11px;
+    color:#dde1f0; max-width:300px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    animation:fadeUp 0.2s ease;
+    cursor:pointer;
+  `
+  toast.innerHTML = `
+    <div style="color:#ef4444;font-size:10px;letter-spacing:1px;margin-bottom:4px">⚠️ COST ALERT</div>
+    <div style="color:#dde1f0;line-height:1.4;">
+      ค่าใช้จ่ายวันนี้: <strong style="color:#ef4444">$${todayCost.toFixed(4)}</strong><br>
+      ถึง threshold $${threshold.toFixed(2)} แล้วครับ
+    </div>
+  `
+  toast.onclick = () => toast.remove()
+  document.body.appendChild(toast)
+  setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transition = 'opacity 0.5s'
+    setTimeout(() => toast.remove(), 500)
+  }, 8000)
+}
+
+function updateCronStatus(event) {
+  const logEl = document.getElementById('cron-live-log')
+  if (!logEl) return
+  const time = new Date(event.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const icons = { cron_start: '▶', cron_done: '✅', cron_error: '❌' }
+  const colors = { cron_start: '#7c3aed', cron_done: '#10b981', cron_error: '#ef4444' }
+  const item = document.createElement('div')
+  item.style.cssText = `font-size:9px;color:${colors[event.type]};font-family:"IBM Plex Mono",monospace;margin-bottom:2px;`
+  item.textContent = `${time} ${icons[event.type]} ${event.data?.name ?? ''} ${event.data?.message ?? ''}`
+  logEl.prepend(item)
+  if (logEl.children.length > 10) logEl.lastElementChild?.remove()
+}
+
 function connectSSE() {
   const es = new EventSource('/api/events')
 
@@ -2242,6 +2902,11 @@ function connectSSE() {
       if (event.type === 'telegram_message') {
         showToast(event)
         loadStatus()
+      } else if (event.type === 'cost_alert') {
+        const { todayCost, threshold } = event.data
+        showCostAlert(todayCost, threshold)
+      } else if (event.type === 'cron_start' || event.type === 'cron_done' || event.type === 'cron_error') {
+        updateCronStatus(event)
       }
     } catch {}
   }
@@ -2332,7 +2997,7 @@ function renderHistory(messages, search, reset) {
       const srcLabel = m.source === 'telegram' ? '✈️ TG' : '🌐 Web'
       const srcCls = m.source === 'telegram' ? 'tg' : ''
       const cost = parseFloat(m.cost_usd) > 0 ? `$${parseFloat(m.cost_usd).toFixed(5)}` : ''
-      const content = highlightSearch(m.content.slice(0, 400) + (m.content.length > 400 ? '...' : ''), search)
+      const content = highlightSearch(m.content, search)
 
       // Model badge — เฉพาะ assistant
       let modelBadgeHtml = ''
@@ -2524,7 +3189,10 @@ function renderUsage(d, balances = {}) {
   <div class="history-toolbar">
     <div class="history-top-row">
       <span class="history-title">💬 CHAT HISTORY</span>
-      <button class="usage-close" onclick="toggleHistory()">✕</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="loadHistory(true)" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer">↺</button>
+        <button class="usage-close" onclick="toggleHistory()">✕</button>
+      </div>
     </div>
     <div class="history-filters">
       <input class="history-search" id="hist-search" type="text" placeholder="🔍 ค้นหาข้อความ..." oninput="histDebounce()">
@@ -2577,7 +3245,9 @@ function renderUsage(d, balances = {}) {
   </div>
   <div class="mem-panel-footer">
     <span id="mem-panel-stat">-</span>
-    <button onclick="loadMemories()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer">↺ Refresh</button>
+    <a href="/api/memories/export?format=json" download style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;text-decoration:none" title="Export JSON">⬇ JSON</a>
+    <a href="/api/memories/export?format=csv" download style="margin-left:4px;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;text-decoration:none" title="Export CSV">⬇ CSV</a>
+    <button onclick="loadMemories()" style="margin-left:4px;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer">↺ Refresh</button>
   </div>
 </div>
 
@@ -2589,6 +3259,216 @@ function renderUsage(d, balances = {}) {
   </div>
   <div class="usage-body" id="system-body">
     <div style="color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;padding:20px 0">Loading...</div>
+  </div>
+</div>
+
+<!-- Cron Jobs Panel -->
+<div class="usage-panel" id="crons-panel" style="display:none;width:520px">
+  <div class="usage-header">
+    <span>⏰ CRON JOBS</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button onclick="openCronModal()" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);color:var(--accent);border-radius:6px;padding:3px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer">+ Add Job</button>
+      <button onclick="loadCronJobs()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer">⟳</button>
+      <button class="usage-close" onclick="toggleCrons()">✕</button>
+    </div>
+  </div>
+  <div id="cron-job-list" style="padding:12px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px">
+    <div style="color:var(--muted);text-align:center;padding:20px">กำลังโหลด...</div>
+  </div>
+  <div style="padding:8px 12px;border-top:1px solid var(--border)">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">LIVE LOG</div>
+    <div id="cron-live-log" style="min-height:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;"></div>
+  </div>
+</div>
+
+<!-- Voice Picker Panel -->
+<!-- ─── Camera Panel ─── -->
+<div id="camera-panel" style="display:none;position:fixed;bottom:120px;right:20px;width:420px;background:var(--s2);border:1px solid var(--border2);border-radius:14px;z-index:500;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6)">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--accent)">📷 LIVE CAMERA</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="cam-status" style="font-size:11px;color:var(--muted)">กด Start เพื่อเริ่ม</span>
+      <button onclick="toggleCamera()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px">✕</button>
+    </div>
+  </div>
+  <div style="position:relative;background:#000;aspect-ratio:16/9">
+    <video id="cam-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>
+    <canvas id="cam-canvas" style="display:none"></canvas>
+    <div id="cam-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">กล้องยังไม่เปิด</div>
+  </div>
+  <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+    <textarea id="cam-prompt" placeholder="สิ่งที่ต้องการวิเคราะห์... (ว่างไว้ = วิเคราะห์ทั่วไป)" rows="2" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:12px;resize:none;box-sizing:border-box"></textarea>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="cam-start-btn" onclick="startCamera()" style="background:var(--hermes);border:none;color:#000;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer">▶ Start</button>
+      <button id="cam-capture-btn" onclick="captureFrame()" disabled style="background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 14px;font-size:12px;cursor:pointer">📸 Capture</button>
+      <select id="cam-interval" style="background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:12px">
+        <option value="0">Manual</option>
+        <option value="3000">ทุก 3 วิ</option>
+        <option value="5000" selected>ทุก 5 วิ</option>
+        <option value="10000">ทุก 10 วิ</option>
+        <option value="30000">ทุก 30 วิ</option>
+      </select>
+      <button id="cam-auto-btn" onclick="toggleAutoCapture()" disabled style="background:var(--s3);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer">⏱ Auto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Video Upload Progress ─── -->
+<div id="video-upload-bar" style="display:none;position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:14px 20px;z-index:500;min-width:300px;box-shadow:0 4px 20px rgba(0,0,0,.5)">
+  <div style="font-size:12px;color:var(--text);margin-bottom:8px">🎬 <span id="video-upload-status">กำลังอัปโหลดวิดีโอ...</span></div>
+  <div style="background:var(--s3);border-radius:4px;height:4px;overflow:hidden">
+    <div id="video-upload-progress" style="height:100%;background:var(--accent);width:0%;transition:width 0.3s"></div>
+  </div>
+</div>
+
+<div id="voice-picker-panel" style="display:none;position:fixed;bottom:120px;left:50%;transform:translateX(-50%);width:440px;max-height:420px;background:var(--s2);border:1px solid var(--border2);border-radius:14px;z-index:500;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--accent)">🎙 ELEVENLABS VOICES</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="voice-search" type="text" placeholder="ค้นหาเสียง..." oninput="filterVoices(this.value)"
+        style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:4px 9px;outline:none;width:160px;font-family:'IBM Plex Mono',monospace">
+      <button onclick="toggleVoicePicker()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1">✕</button>
+    </div>
+  </div>
+  <div id="voice-list" style="overflow-y:auto;flex:1;padding:8px">
+    <div style="color:var(--muted);text-align:center;padding:20px;font-size:12px">กำลังโหลด voices...</div>
+  </div>
+</div>
+
+<!-- Cron Add/Edit Modal -->
+<div id="cron-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;background:rgba(0,0,0,0.6)">
+  <div style="background:var(--s2);border:1px solid var(--border2);border-radius:14px;width:560px;max-height:90vh;overflow-y:auto;padding:24px;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;color:var(--accent)" id="cron-modal-title">+ ADD CRON JOB</span>
+      <button onclick="closeCronModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px">✕</button>
+    </div>
+
+    <!-- NL Input -->
+    <div style="margin-bottom:16px;padding:14px;background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.1);border-radius:10px">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">🤖 อธิบายสิ่งที่ต้องการ — NEO แปลให้อัตโนมัติ</div>
+      <textarea id="cron-nl-input" rows="2" style="width:100%;background:transparent;border:none;color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-size:13px;resize:none;outline:none" placeholder="เช่น สรุปข่าว AI จาก YouTube 10 ช่องไทย ทุกวัน 02:00 รายงาน 07:30 ด้วย Gemini"></textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px">
+        <button onclick="parseCronNL()" id="cron-parse-btn" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);color:var(--accent);border-radius:6px;padding:4px 14px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer">🤖 ให้ NEO แปล →</button>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin:14px 0;position:relative;text-align:center">
+      <span style="background:var(--s2);padding:0 10px;font-size:10px;color:var(--muted);position:relative;top:-8px">หรือกรอกเอง</span>
+    </div>
+
+    <!-- Form -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div class="cron-label">ชื่อ Job</div>
+          <input id="cf-name" class="cron-input" placeholder="Daily AI Digest">
+        </div>
+        <div>
+          <div class="cron-label">Action Type</div>
+          <select id="cf-type" class="cron-input" onchange="onCronTypeChange()">
+            <option value="youtube_summary">📺 YouTube Summary</option>
+            <option value="web_scrape">🌐 Web Scrape</option>
+            <option value="custom_prompt">🤖 Custom Prompt</option>
+            <option value="spend_alert">💰 Spend Alert</option>
+            <option value="memory_cleanup">🧹 Memory Cleanup</option>
+            <option value="daily_report">📊 Daily Report</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div class="cron-label">คำอธิบาย</div>
+        <input id="cf-desc" class="cron-input" placeholder="อธิบายสั้นๆ ว่า job นี้ทำอะไร">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div class="cron-label">Schedule (cron expression)</div>
+          <input id="cf-schedule" class="cron-input" placeholder="0 2 * * *" oninput="updateCronPreview('cf-schedule','cf-sched-preview')">
+          <div id="cf-sched-preview" style="font-size:10px;color:var(--accent);margin-top:3px"></div>
+        </div>
+        <div>
+          <div class="cron-label">AI Model</div>
+          <select id="cf-model" class="cron-input">
+            <option value="gemini">🌈 Gemini Flash</option>
+            <option value="deepseek">🔴 DeepSeek</option>
+            <option value="claude-haiku">🟣 Claude Haiku</option>
+            <option value="claude-sonnet">🟣 Claude Sonnet</option>
+            <option value="none">— ไม่ใช้ AI</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- YouTube config -->
+      <div id="cfg-youtube">
+        <div class="cron-label">YouTube Channels</div>
+        <div id="cf-channels" style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px"></div>
+        <button onclick="addCronChannel()" style="background:rgba(255,255,255,0.04);border:1px dashed var(--border2);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;width:100%">+ เพิ่มช่อง</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
+          <div>
+            <div class="cron-label">Max videos/ช่อง</div>
+            <input id="cf-max-videos" class="cron-input" type="number" value="3" min="1" max="10">
+          </div>
+          <div>
+            <div class="cron-label">ย้อนหลัง (ชั่วโมง)</div>
+            <input id="cf-since-hours" class="cron-input" type="number" value="48" min="1" max="168">
+          </div>
+          <div>
+            <div class="cron-label">เวลารายงาน</div>
+            <input id="cf-report-sched" class="cron-input" placeholder="30 7 * * *" oninput="updateCronPreview('cf-report-sched','cf-report-preview')">
+            <div id="cf-report-preview" style="font-size:10px;color:var(--accent);margin-top:3px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Web scrape config -->
+      <div id="cfg-webscrape" style="display:none">
+        <div class="cron-label">URLs (หนึ่ง URL ต่อบรรทัด)</div>
+        <textarea id="cf-urls" class="cron-input" rows="3" placeholder="https://example.com/ai-news&#10;https://another.com/tech"></textarea>
+        <div class="cron-label" style="margin-top:8px">Prompt สำหรับ AI</div>
+        <textarea id="cf-scrape-prompt" class="cron-input" rows="2" placeholder="สรุปข่าว AI ที่น่าสนใจเป็นภาษาไทย"></textarea>
+      </div>
+
+      <!-- Custom prompt config -->
+      <div id="cfg-custom" style="display:none">
+        <div class="cron-label">Prompt</div>
+        <textarea id="cf-prompt" class="cron-input" rows="4" placeholder="Prompt ที่ต้องการส่งให้ AI ทุกครั้งที่ job รัน..."></textarea>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--muted);cursor:pointer">
+          <input type="checkbox" id="cf-tg" checked> ส่งผล Telegram
+        </label>
+      </div>
+
+      <!-- Memory cleanup config -->
+      <div id="cfg-memory" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div class="cron-label">Min Importance (ลบถ้าต่ำกว่า)</div>
+            <input id="cf-min-imp" class="cron-input" type="number" value="3" min="1" max="10">
+          </div>
+          <div>
+            <div class="cron-label">อายุเก่ากว่า (วัน)</div>
+            <input id="cf-older-days" class="cron-input" type="number" value="7" min="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- Spend alert / Daily report — no extra config needed -->
+      <div id="cfg-simple" style="display:none">
+        <div style="font-size:12px;color:var(--muted);padding:10px;background:rgba(255,255,255,0.02);border-radius:8px">
+          ไม่ต้องกำหนด config เพิ่มเติม — job นี้ใช้ค่าจาก environment variables
+        </div>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;margin-top:2px">
+        <input type="checkbox" id="cf-enabled" checked> เปิดใช้งานทันที
+      </label>
+    </div>
+
+    <!-- Footer buttons -->
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <button onclick="closeCronModal()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 16px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer">ยกเลิก</button>
+      <button onclick="saveCronJob()" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);color:var(--accent);border-radius:7px;padding:6px 20px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer">💾 บันทึก</button>
+    </div>
   </div>
 </div>
 
@@ -3271,6 +4151,373 @@ function renderReports(logs, lastRuns) {
 // ─── System Health Panel ───
 let systemOpen = false
 let systemTimer = null
+// ══════════════════════════════════════════════
+//  CRON JOBS TAB
+// ══════════════════════════════════════════════
+
+let cronsOpen = false
+let cronJobs = []
+let editingCronId = null
+
+function toggleCrons() {
+  cronsOpen = !cronsOpen
+  const panel = document.getElementById('crons-panel')
+  panel.style.display = cronsOpen ? 'flex' : 'none'
+  panel.style.flexDirection = 'column'
+  if (cronsOpen) loadCronJobs()
+}
+
+async function requestDeploy() {
+  const btn = document.getElementById('deploy-btn')
+  if (btn) { btn.textContent = '⏳ Deploy...'; btn.style.pointerEvents = 'none' }
+  try {
+    const r = await fetch('/api/deploy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note: 'web UI' }) })
+    const data = await r.json()
+    if (data.ok) {
+      showCostAlert && (() => {})()
+      const toast = document.createElement('div')
+      toast.style.cssText = 'position:fixed;bottom:90px;right:20px;background:#0d1a0d;border:1px solid rgba(16,185,129,0.4);border-radius:10px;padding:12px 16px;z-index:999;font-family:"IBM Plex Mono",monospace;font-size:11px;color:#dde1f0;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,0.5);animation:fadeUp 0.2s ease'
+      toast.innerHTML = `<div style="color:#10b981;font-size:10px;letter-spacing:1px;margin-bottom:6px">🚀 DEPLOY REQUESTED</div><div style="color:#9292aa;font-size:10px;line-height:1.5">Telegram notification sent.<br>SSH in and confirm to deploy.</div>`
+      document.body.appendChild(toast)
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.4s'; setTimeout(() => toast.remove(), 400) }, 6000)
+    }
+  } catch {}
+  if (btn) { btn.textContent = '🚀 Deploy'; btn.style.pointerEvents = '' }
+}
+
+// ─── Cron expression → human-readable (Thai) ───
+function cronToHuman(expr) {
+  if (!expr) return ''
+  const parts = expr.trim().split(/\s+/)
+  if (parts.length !== 5) return expr
+  const [min, hour, dom, month, dow] = parts
+  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์']
+  const timeStr = (min !== '*' && hour !== '*')
+    ? ` ${hour.padStart(2,'0')}:${min.padStart(2,'0')}`
+    : ''
+
+  if (dow !== '*') {
+    const d = days[parseInt(dow)] ?? `วัน${dow}`
+    return `ทุก${d}${timeStr}`
+  }
+  if (dom !== '*' && month === '*') return `วันที่ ${dom} ของทุกเดือน${timeStr}`
+  if (dom === '*' && month === '*') return `ทุกวัน${timeStr}`
+  return expr
+}
+
+function updateCronPreview(inputId, previewId) {
+  const val = document.getElementById(inputId)?.value ?? ''
+  const el  = document.getElementById(previewId)
+  if (el) el.textContent = val ? cronToHuman(val) : ''
+}
+
+// ─── Load + render jobs ───
+async function loadCronJobs() {
+  try {
+    const r = await fetch('/api/cron/jobs')
+    cronJobs = await r.json()
+    renderCronJobs()
+  } catch (e) {
+    document.getElementById('cron-job-list').innerHTML =
+      `<div style="color:var(--deepseek);text-align:center;padding:20px">❌ โหลดไม่ได้: ${e.message}</div>`
+  }
+}
+
+const ACTION_ICON  = { youtube_summary:'📺', web_scrape:'🌐', custom_prompt:'🤖', spend_alert:'💰', memory_cleanup:'🧹', daily_report:'📊' }
+const MODEL_LABEL  = { gemini:'Gemini Flash', deepseek:'DeepSeek', 'claude-haiku':'Claude Haiku', 'claude-sonnet':'Claude Sonnet', none:'No AI' }
+const STATUS_COLOR = { success:'var(--hermes)', error:'var(--deepseek)', running:'var(--gold)', skipped:'var(--muted)', null:'var(--muted2)' }
+
+function renderCronJobs() {
+  const el = document.getElementById('cron-job-list')
+  if (!cronJobs.length) {
+    el.innerHTML = `<div style="color:var(--muted);text-align:center;padding:30px">
+      ยังไม่มี Cron Job<br><small>กด "+ Add Job" เพื่อเพิ่ม</small>
+    </div>`
+    return
+  }
+  el.innerHTML = cronJobs.map(j => renderJobCard(j)).join('')
+}
+
+function renderJobCard(job) {
+  const color  = STATUS_COLOR[job.last_status] ?? 'var(--muted2)'
+  const icon   = ACTION_ICON[job.action_type]  ?? '⚙️'
+  const model  = MODEL_LABEL[job.ai_model]     ?? job.ai_model
+  const sched  = cronToHuman(job.schedule)
+  const rSched = job.action_config?.reportSchedule
+  const rNote  = rSched ? ` · 📊 รายงาน ${cronToHuman(rSched)}` : ''
+  const lastAt = job.last_run_at
+    ? new Date(job.last_run_at).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', hour12: false })
+    : 'ยังไม่เคยรัน'
+  const statusIcon = { success:'✅', error:'❌', running:'⏳', skipped:'⏭️' }[job.last_status] ?? '○'
+  const preview = (job.last_message ?? '').slice(0, 200)
+
+  return `<div class="cron-card ${job.enabled ? '' : 'disabled'}" id="cron-card-${job.id}">
+    <div class="cron-card-header">
+      <span class="cron-dot" style="background:${job.enabled ? color : 'var(--muted2)'}"></span>
+      <span class="cron-name">${escHtml(job.name)}</span>
+      <div class="cron-card-actions">
+        <button class="cron-act-btn tog-${job.enabled ? 'on' : 'off'}" onclick="toggleCronEnabled('${job.id}',${job.enabled})">${job.enabled ? 'ON' : 'OFF'}</button>
+        <button class="cron-act-btn run" onclick="runCronJobById('${job.id}','${escHtml(job.name)}')" title="Run Now">▶ รัน</button>
+        <button class="cron-act-btn edit" onclick="openCronModal('${job.id}')" title="Edit">✏</button>
+        <button class="cron-act-btn del" onclick="deleteCronJob('${job.id}','${escHtml(job.name)}')" title="Delete">🗑</button>
+      </div>
+    </div>
+    <div class="cron-card-meta">
+      <span>${icon} ${job.action_type.replace('_',' ')} · ${model}</span>
+      <span>⏰ ${sched}${rNote}</span>
+    </div>
+    <div class="cron-card-status">
+      ${job.last_status ? `<span style="color:${color}">${statusIcon} ${job.last_status}</span>` : ''}
+      <span style="color:var(--muted);font-size:10px">${lastAt}</span>
+    </div>
+    ${preview ? `<div class="cron-card-preview">${escHtml(preview)}${(job.last_message ?? '').length > 200 ? '...' : ''}</div>` : ''}
+  </div>`
+}
+
+// ─── Job actions ───
+async function runCronJobById(jobId, name) {
+  if (!confirm(`รัน "${name}" ตอนนี้เลย?`)) return
+  try {
+    await fetch(`/api/cron/jobs/${jobId}/run`, { method: 'POST' })
+    showToast(`▶ ${name} เริ่มทำงานแล้ว`)
+    setTimeout(loadCronJobs, 2000)
+  } catch (e) { showToast('❌ รันไม่ได้: ' + e.message) }
+}
+
+async function toggleCronEnabled(jobId, current) {
+  try {
+    await fetch(`/api/cron/jobs/${jobId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: !current }),
+    })
+    await loadCronJobs()
+  } catch (e) { showToast('❌ เปลี่ยนสถานะไม่ได้') }
+}
+
+async function deleteCronJob(jobId, name) {
+  if (!confirm(`ลบ "${name}" ออกถาวร?`)) return
+  try {
+    await fetch(`/api/cron/jobs/${jobId}`, { method: 'DELETE' })
+    showToast(`🗑 ลบ ${name} แล้ว`)
+    await loadCronJobs()
+  } catch (e) { showToast('❌ ลบไม่ได้: ' + e.message) }
+}
+
+// ─── Modal open/close ───
+function openCronModal(jobId = null) {
+  editingCronId = jobId
+  const job = jobId ? cronJobs.find(j => j.id === jobId) : null
+  document.getElementById('cron-modal-title').textContent = jobId ? '✏ EDIT CRON JOB' : '+ ADD CRON JOB'
+  document.getElementById('cron-nl-input').value = ''
+
+  if (job) {
+    document.getElementById('cf-name').value     = job.name ?? ''
+    document.getElementById('cf-desc').value     = job.description ?? ''
+    document.getElementById('cf-schedule').value = job.schedule ?? ''
+    document.getElementById('cf-type').value     = job.action_type ?? 'youtube_summary'
+    document.getElementById('cf-model').value    = job.ai_model ?? 'gemini'
+    document.getElementById('cf-enabled').checked = job.enabled ?? true
+    fillCronConfig(job.action_type, job.action_config ?? {})
+  } else {
+    document.getElementById('cf-name').value     = ''
+    document.getElementById('cf-desc').value     = ''
+    document.getElementById('cf-schedule').value = ''
+    document.getElementById('cf-type').value     = 'youtube_summary'
+    document.getElementById('cf-model').value    = 'gemini'
+    document.getElementById('cf-enabled').checked = true
+    fillCronConfig('youtube_summary', {})
+  }
+
+  updateCronPreview('cf-schedule', 'cf-sched-preview')
+  updateCronPreview('cf-report-sched', 'cf-report-preview')
+  onCronTypeChange()
+  document.getElementById('cron-modal').style.display = 'flex'
+}
+
+function closeCronModal() {
+  document.getElementById('cron-modal').style.display = 'none'
+  editingCronId = null
+}
+
+// ─── Config sections toggle ───
+function onCronTypeChange() {
+  const type = document.getElementById('cf-type').value
+  const sections = { youtube: 'youtube_summary', webscrape: 'web_scrape', custom: 'custom_prompt', memory: 'memory_cleanup' }
+  document.getElementById('cfg-youtube').style.display  = type === 'youtube_summary' ? 'block' : 'none'
+  document.getElementById('cfg-webscrape').style.display = type === 'web_scrape'     ? 'block' : 'none'
+  document.getElementById('cfg-custom').style.display   = type === 'custom_prompt'  ? 'block' : 'none'
+  document.getElementById('cfg-memory').style.display   = type === 'memory_cleanup' ? 'block' : 'none'
+  document.getElementById('cfg-simple').style.display   = ['spend_alert','daily_report'].includes(type) ? 'block' : 'none'
+}
+
+function fillCronConfig(type, cfg) {
+  // YouTube
+  const chList = document.getElementById('cf-channels')
+  chList.innerHTML = ''
+  const channels = cfg.channels ?? []
+  channels.forEach(ch => addCronChannelRow(ch.name ?? '', ch.channelId ?? ''))
+  if (!channels.length) addCronChannelRow('', '')
+  document.getElementById('cf-max-videos').value  = cfg.maxVideosPerChannel ?? 3
+  document.getElementById('cf-since-hours').value = cfg.sinceHours ?? 48
+  document.getElementById('cf-report-sched').value = cfg.reportSchedule ?? ''
+
+  // Web scrape
+  document.getElementById('cf-urls').value = (cfg.urls ?? []).join('\n')
+  document.getElementById('cf-scrape-prompt').value = cfg.prompt ?? ''
+
+  // Custom prompt
+  document.getElementById('cf-prompt').value = cfg.prompt ?? ''
+  document.getElementById('cf-tg').checked = cfg.sendToTelegram !== false
+
+  // Memory
+  document.getElementById('cf-min-imp').value  = cfg.minImportance ?? 3
+  document.getElementById('cf-older-days').value = cfg.olderThanDays ?? 7
+}
+
+// ─── Channel list management ───
+function addCronChannelRow(name = '', channelId = '') {
+  const row = document.createElement('div')
+  row.className = 'ch-row'
+  row.innerHTML = `
+    <input placeholder="ชื่อช่อง" value="${escHtml(name)}" style="flex:0.7">
+    <input placeholder="Channel ID (UCxxxx)" value="${escHtml(channelId)}" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px">
+    <button onclick="this.parentElement.remove()" title="ลบ">✕</button>
+  `
+  document.getElementById('cf-channels').appendChild(row)
+}
+
+function addCronChannel() { addCronChannelRow('', '') }
+
+function collectChannels() {
+  return [...document.querySelectorAll('#cf-channels .ch-row')].map(row => {
+    const inputs = row.querySelectorAll('input')
+    return { name: inputs[0].value.trim(), channelId: inputs[1].value.trim() }
+  }).filter(c => c.channelId)
+}
+
+// ─── Build action_config from form ───
+function buildCronConfig(type) {
+  switch (type) {
+    case 'youtube_summary': {
+      const rs = document.getElementById('cf-report-sched').value.trim()
+      return {
+        channels:            collectChannels(),
+        maxVideosPerChannel: parseInt(document.getElementById('cf-max-videos').value) || 3,
+        sinceHours:          parseInt(document.getElementById('cf-since-hours').value) || 48,
+        ...(rs ? { reportSchedule: rs } : {}),
+      }
+    }
+    case 'web_scrape':
+      return {
+        urls:          document.getElementById('cf-urls').value.split('\n').map(u => u.trim()).filter(Boolean),
+        prompt:        document.getElementById('cf-scrape-prompt').value.trim(),
+        sendToTelegram: true,
+      }
+    case 'custom_prompt':
+      return {
+        prompt:        document.getElementById('cf-prompt').value.trim(),
+        sendToTelegram: document.getElementById('cf-tg').checked,
+      }
+    case 'memory_cleanup':
+      return {
+        minImportance: parseInt(document.getElementById('cf-min-imp').value) || 3,
+        olderThanDays: parseInt(document.getElementById('cf-older-days').value) || 7,
+      }
+    default: return {}
+  }
+}
+
+// ─── NL parse ───
+async function parseCronNL() {
+  const input = document.getElementById('cron-nl-input').value.trim()
+  if (!input) return
+  const btn = document.getElementById('cron-parse-btn')
+  btn.textContent = '⏳ กำลังแปล...'
+  btn.disabled = true
+  try {
+    const r = await fetch('/api/cron/jobs/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input }),
+    })
+    if (!r.ok) throw new Error(await r.text())
+    const cfg = await r.json()
+
+    if (cfg.name)        document.getElementById('cf-name').value     = cfg.name
+    if (cfg.description) document.getElementById('cf-desc').value     = cfg.description
+    if (cfg.schedule)    document.getElementById('cf-schedule').value = cfg.schedule
+    if (cfg.action_type) document.getElementById('cf-type').value     = cfg.action_type
+    if (cfg.ai_model)    document.getElementById('cf-model').value    = cfg.ai_model
+    if (cfg.enabled !== undefined) document.getElementById('cf-enabled').checked = cfg.enabled
+
+    if (cfg.action_config) fillCronConfig(cfg.action_type, cfg.action_config)
+    onCronTypeChange()
+    updateCronPreview('cf-schedule', 'cf-sched-preview')
+    updateCronPreview('cf-report-sched', 'cf-report-preview')
+    showToast('✅ แปลสำเร็จ — ตรวจสอบและแก้ไขได้ก่อนบันทึก')
+  } catch (e) {
+    showToast('❌ แปลไม่ได้: ' + e.message)
+  } finally {
+    btn.textContent = '🤖 ให้ NEO แปล →'
+    btn.disabled = false
+  }
+}
+
+// ─── Save (create / update) ───
+async function saveCronJob() {
+  const name     = document.getElementById('cf-name').value.trim()
+  const schedule = document.getElementById('cf-schedule').value.trim()
+  const type     = document.getElementById('cf-type').value
+  if (!name || !schedule) { showToast('⚠️ กรุณากรอก ชื่อ และ Schedule'); return }
+
+  const payload = {
+    name,
+    description:   document.getElementById('cf-desc').value.trim() || null,
+    schedule,
+    action_type:   type,
+    action_config: buildCronConfig(type),
+    ai_model:      document.getElementById('cf-model').value,
+    enabled:       document.getElementById('cf-enabled').checked,
+  }
+
+  try {
+    const url    = editingCronId ? `/api/cron/jobs/${editingCronId}` : '/api/cron/jobs'
+    const method = editingCronId ? 'PUT' : 'POST'
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!r.ok) { const e = await r.json(); throw new Error(e.error); }
+    closeCronModal()
+    await loadCronJobs()
+    showToast(editingCronId ? '✅ อัปเดต Job แล้ว' : '✅ เพิ่ม Job ใหม่แล้ว')
+  } catch (e) {
+    showToast('❌ บันทึกไม่ได้: ' + e.message)
+  }
+}
+
+// close modal on overlay click
+document.getElementById('cron-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeCronModal()
+})
+
+// simple toast helper (reuse if exists, else create)
+function showToast(msg) {
+  let t = document.getElementById('neo-toast')
+  if (!t) {
+    t = document.createElement('div')
+    t.id = 'neo-toast'
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--border2);color:var(--text);padding:8px 18px;border-radius:8px;font-size:12px;z-index:9999;pointer-events:none;transition:opacity .3s'
+    document.body.appendChild(t)
+  }
+  t.textContent = msg
+  t.style.opacity = '1'
+  clearTimeout(t._timer)
+  t._timer = setTimeout(() => { t.style.opacity = '0' }, 3000)
+}
+
 let lastHealthData = null
 
 function toggleSystem() {
@@ -3477,12 +4724,7 @@ function renderSystem(d) {
 </script>
 
 <script>
-// ─── TTS Voice Selector ───
-let ttsVoiceMode = 'female'  // 'female' | 'male'
 
-function onVoiceChange(el) {
-  ttsVoiceMode = el.value
-}
 
 </script>
 

@@ -17,6 +17,7 @@ export interface RouteRequest {
   history?: ConversationTurn[]
   imageBase64?: string
   imageMime?: string
+  onToken?: (token: string) => void
 }
 
 export interface RouteResponse {
@@ -193,30 +194,31 @@ export async function routeAndCall(req: RouteRequest): Promise<RouteResponse> {
 
   let result: { content: string; promptTokens: number; completionTokens: number }
 
+  const onToken = req.onToken
   switch (model) {
     case 'hermes':
-      result = await callHermes(req.message, req.systemPrompt, req.history)
+      result = await callHermes(req.message, req.systemPrompt, req.history, onToken)
       break
     case 'claude-haiku':
-      result = await callClaude(req.message, req.systemPrompt, 'claude-haiku-4-5', req.history)
+      result = await callClaude(req.message, req.systemPrompt, 'claude-haiku-4-5-20251001', req.history, onToken)
       break
     case 'claude-sonnet':
-      result = await callClaude(req.message, req.systemPrompt, 'claude-sonnet-4-5', req.history)
+      result = await callClaude(req.message, req.systemPrompt, 'claude-sonnet-4-6', req.history, onToken)
       break
     case 'claude-opus':
-      result = await callClaude(req.message, req.systemPrompt, 'claude-opus-4-5', req.history)
+      result = await callClaude(req.message, req.systemPrompt, 'claude-opus-4-7', req.history, onToken)
       break
     case 'gpt-4o':
-      result = await callOpenAI(req.message, req.systemPrompt, req.imageBase64, req.imageMime, req.history)
+      result = await callOpenAI(req.message, req.systemPrompt, req.imageBase64, req.imageMime, req.history, onToken)
       break
     case 'gemini':
-      result = await callGemini(req.message, req.systemPrompt, req.history)
+      result = await callGemini(req.message, req.systemPrompt, req.history, onToken)
       break
     case 'deepseek':
-      result = await callDeepSeek(req.message, req.systemPrompt, req.history)
+      result = await callDeepSeek(req.message, req.systemPrompt, req.history, onToken)
       break
     default:
-      result = await callHermes(req.message, req.systemPrompt, req.history)
+      result = await callHermes(req.message, req.systemPrompt, req.history, onToken)
   }
 
   const latencyMs = Date.now() - start

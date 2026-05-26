@@ -4,15 +4,9 @@ export const neoEvents = new EventEmitter()
 neoEvents.setMaxListeners(100)
 
 export interface NeoEvent {
-  type: 'telegram_message' | 'memory_saved' | 'status_update'
-  channel: 'telegram' | 'web'
-  data: {
-    preview?: string       // ย่อ message ไม่เกิน 80 ตัว
-    model?: string
-    costUsd?: number
-    latencyMs?: number
-    memoryCount?: number
-  }
+  type: 'telegram_message' | 'memory_saved' | 'status_update' | 'cron_start' | 'cron_done' | 'cron_error' | 'cost_alert' | 'deploy_requested'
+  channel: 'telegram' | 'web' | 'system'
+  data: Record<string, any>
   timestamp: number
 }
 

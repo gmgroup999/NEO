@@ -1,11 +1,13 @@
 import Fastify from 'fastify'
+import multipart from '@fastify/multipart'
 import staticPlugin from '@fastify/static'
 import { join } from 'path'
 import { routeAndCall, parseMention, RouteRequest } from '../core/router'
 import type { ConversationTurn } from '../ai/claude'
 import { buildContext, extractMemoriesFromConversation, recallMemories, saveMemory, invalidateProjectCache } from '../core/memory'
-import { generateImage, isImageRequest, extractImagePrompt } from '../ai/image'
+import { generateImage, isImageRequest, extractImagePrompt, type ImageProvider } from '../ai/image'
 import { logAICall, db, saveMessage } from '../db/client'
+import { shouldSearch, webSearch, formatSearchContext } from '../ai/search'
 import { neoEvents, NeoEvent } from './events'
 import { randomUUID } from 'crypto'
 import {
@@ -19,6 +21,7 @@ import {
 } from './auth'
 
 const app = Fastify({ logger: false, bodyLimit: 10 * 1024 * 1024 }) // 10MB
+app.register(multipart, { limits: { fileSize: 200 * 1024 * 1024 } }) // 200MB for video
 
 // ─── Auth hook — ต้องอยู่ก่อน static plugin ───
 app.addHook('onRequest', requireAuth)
@@ -59,26 +62,29 @@ app.get('/login', async (req, reply) => {
 
 // ─── Chat API ───
 app.post('/api/chat', async (req, reply) => {
-  const { message, sessionId = randomUUID(), history = [], imageBase64, imageMime } = req.body as {
+  const { message, sessionId = randomUUID(), history = [], imageBase64, imageMime, imageProvider, imageSize } = req.body as {
     message: string
     sessionId?: string
     history?: ConversationTurn[]
     imageBase64?: string
     imageMime?: string
+    imageProvider?: ImageProvider
+    imageSize?: string
   }
 
   if (isImageRequest(message)) {
     const prompt = extractImagePrompt(message)
+    const provider: ImageProvider = imageProvider === 'openai' ? 'openai' : 'gemini'
 
     try {
-      const result = await generateImage(prompt)
+      const result = await generateImage(prompt, provider, imageSize)
 
       logAICall({
         sessionId,
-        model: 'gpt-image-1',
-        provider: 'openai',
+        model: result.model,
+        provider: result.provider === 'openai' ? 'openai' : 'google',
         taskType: 'image',
-        routedBy: 'auto',
+        routedBy: 'manual',
         promptTokens: 0,
         completionTokens: 0,
         costUsd: result.costUsd,
@@ -89,25 +95,35 @@ app.post('/api/chat', async (req, reply) => {
         type: 'image',
         imageUrl: result.url,
         revisedPrompt: result.revisedPrompt,
-        model: 'gpt-image-1',
+        model: result.model,
+        provider: result.provider,
         costUsd: result.costUsd,
         sessionId,
       }
     } catch (err: any) {
       console.error('Image error:', err)
-      const isModeration = err?.error?.code === 'moderation_blocked'
+      const isModeration = err?.error?.code === 'moderation_blocked' || err?.message?.includes('safety')
+      const providerName = provider === 'openai' ? 'OpenAI' : 'Gemini'
       const msg = isModeration
-        ? 'OpenAI ปฏิเสธ prompt นี้ (content policy) — ลองเปลี่ยน prompt หรือใช้ภาษาอังกฤษครับ'
-        : 'Image generation failed'
+        ? `${providerName} ปฏิเสธ prompt นี้ (content policy) — ลองเปลี่ยน prompt หรือสลับ provider ครับ`
+        : `Image generation failed (${providerName}): ${err.message}`
       return reply.status(500).send({ error: msg })
     }
   }
 
   const { model: forcedModel, cleanMessage } = parseMention(message)
-  const systemPrompt = await buildContext(cleanMessage || message, history.slice(-6))
+  const msgForContext = cleanMessage || message
+
+  // Web search injection (parallel with context build when search needed)
+  const [systemPromptBase, searchResults] = await Promise.all([
+    buildContext(msgForContext, history.slice(-6)),
+    shouldSearch(msgForContext) ? webSearch(msgForContext) : Promise.resolve([]),
+  ])
+  const searchCtx = formatSearchContext(searchResults)
+  const systemPrompt = searchCtx + systemPromptBase
 
   const response = await routeAndCall({
-    message: cleanMessage || message,
+    message: msgForContext,
     systemPrompt,
     sessionId,
     forcedModel: forcedModel ?? undefined,
@@ -119,7 +135,7 @@ app.post('/api/chat', async (req, reply) => {
   saveMessage({ sessionId, source: 'web', role: 'user', content: message })
   saveMessage({ sessionId, source: 'web', role: 'assistant', content: response.content, model: response.model, costUsd: response.costUsd })
 
-  extractMemoriesFromConversation(message, response.content, sessionId)
+  extractMemoriesFromConversation(msgForContext, response.content, sessionId)
     .catch(console.error)
 
   return {
@@ -133,25 +149,193 @@ app.post('/api/chat', async (req, reply) => {
   }
 })
 
-// ─── TTS Proxy — ดึง Google TTS server-side เพื่อหลีก CORS ───
-app.get('/api/tts', async (req, reply) => {
-  const { text, lang = 'th' } = req.query as { text: string; lang?: string }
-  if (!text) return reply.status(400).send({ error: 'text required' })
+// ─── Cost Alert — emit SSE when daily cost crosses threshold ───
+const _alertedDays = new Map<string, Set<number>>() // date → Set of alerted thresholds
 
-  const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text.slice(0, 200))}&tl=${lang}&client=tw-ob`
+async function checkCostAlert() {
+  const threshold = parseFloat(process.env.DAILY_COST_ALERT_USD ?? '1.0')
+  if (!threshold) return
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const r = await db.query(
+      `SELECT COALESCE(SUM(total_cost_usd), 0)::float AS total FROM neo_costs_daily WHERE date = CURRENT_DATE`
+    )
+    const total: number = r.rows[0].total
+    if (total < threshold) return
+    if (!_alertedDays.has(today)) _alertedDays.set(today, new Set())
+    const alerted = _alertedDays.get(today)!
+    if (alerted.has(threshold)) return
+    alerted.add(threshold)
+    neoEvents.emit('neo', { type: 'cost_alert', channel: 'system', data: { todayCost: total, threshold }, timestamp: Date.now() })
+  } catch { /* non-critical */ }
+}
 
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Referer': 'https://translate.google.com/',
-    },
+// ─── Chat Stream API — SSE token-by-token ───
+app.post('/api/chat/stream', async (req, reply) => {
+  const { message, sessionId: sid = randomUUID(), history = [], imageBase64, imageMime, imageProvider, imageSize } = req.body as {
+    message: string
+    sessionId?: string
+    history?: ConversationTurn[]
+    imageBase64?: string
+    imageMime?: string
+    imageProvider?: ImageProvider
+    imageSize?: string
+  }
+
+  reply.hijack()
+  const raw = reply.raw
+  raw.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
   })
 
-  if (!res.ok) return reply.status(502).send({ error: 'TTS fetch failed' })
+  const sessionId = sid
+  const sse = (data: object) => raw.write(`data: ${JSON.stringify(data)}\n\n`)
 
-  reply.header('Content-Type', 'audio/mpeg')
-  reply.header('Cache-Control', 'public, max-age=3600')
-  return reply.send(Buffer.from(await res.arrayBuffer()))
+  try {
+    if (isImageRequest(message)) {
+      const prompt = extractImagePrompt(message)
+      const provider: ImageProvider = imageProvider === 'openai' ? 'openai' : 'gemini'
+      const result = await generateImage(prompt, provider, imageSize)
+      logAICall({
+        sessionId, model: result.model,
+        provider: result.provider === 'openai' ? 'openai' : 'google',
+        taskType: 'image', routedBy: 'manual',
+        promptTokens: 0, completionTokens: 0, costUsd: result.costUsd, latencyMs: 0,
+      }).catch(console.error)
+      sse({ type: 'image', imageUrl: result.url, revisedPrompt: result.revisedPrompt, model: result.model, provider: result.provider, costUsd: result.costUsd, sessionId })
+    } else {
+      const { model: forcedModel, cleanMessage } = parseMention(message)
+      const msgForContext = cleanMessage || message
+
+      const [systemPromptBase, searchResults] = await Promise.all([
+        buildContext(msgForContext, history.slice(-6)),
+        shouldSearch(msgForContext) ? webSearch(msgForContext) : Promise.resolve([]),
+      ])
+      const systemPrompt = formatSearchContext(searchResults) + systemPromptBase
+
+      const result = await routeAndCall({
+        message: msgForContext,
+        systemPrompt,
+        sessionId,
+        forcedModel: forcedModel ?? undefined,
+        history: history.slice(-20),
+        imageBase64,
+        imageMime,
+        onToken: (token: string) => sse({ type: 'token', token }),
+      })
+
+      sse({ type: 'done', model: result.model, routedBy: result.routedBy, costUsd: result.costUsd, latencyMs: result.latencyMs, sessionId })
+
+      saveMessage({ sessionId, source: 'web', role: 'user', content: message }).catch(console.error)
+      saveMessage({ sessionId, source: 'web', role: 'assistant', content: result.content, model: result.model, costUsd: result.costUsd }).catch(console.error)
+      extractMemoriesFromConversation(msgForContext, result.content, sessionId).catch(console.error)
+      checkCostAlert().catch(console.error)
+    }
+  } catch (err: any) {
+    const isModeration = err?.error?.code === 'moderation_blocked' || err?.message?.includes('safety')
+    sse({ type: 'error', error: isModeration ? 'Content policy — ลองเปลี่ยน prompt ครับ' : (err.message || 'เกิดข้อผิดพลาด') })
+  }
+
+  raw.end()
+})
+
+// ─── TTS — Google Cloud TTS (Thai) + ElevenLabs (others) ───
+app.get('/api/tts', async (req, reply) => {
+  const { text, voiceId } = req.query as { text: string; voiceId?: string }
+  if (!text) return reply.status(400).send({ error: 'text required' })
+
+  // Google Cloud TTS voices (prefixed google:)
+  if (voiceId?.startsWith('google:')) {
+    try {
+      const { generateSpeechGoogle, GOOGLE_THAI_VOICES } = await import('../ai/gtts')
+      const voice = GOOGLE_THAI_VOICES.find(v => v.id === voiceId)
+      if (!voice) return reply.status(400).send({ error: 'unknown Google voice' })
+      const audio = await generateSpeechGoogle(text.slice(0, 5000), voice.voiceName, voice.languageCode)
+      reply.header('Content-Type', 'audio/mpeg')
+      reply.header('Cache-Control', 'no-cache')
+      return reply.send(audio)
+    } catch (err: any) {
+      console.error('[TTS] Google Cloud error:', err.message)
+      return reply.status(502).send({ error: err.message })
+    }
+  }
+
+  // ElevenLabs voices
+  if (process.env.ELEVENLABS_API_KEY) {
+    try {
+      const { generateSpeech } = await import('../ai/tts')
+      const audio = await generateSpeech(text.slice(0, 1000), voiceId)
+      reply.header('Content-Type', 'audio/mpeg')
+      reply.header('Cache-Control', 'no-cache')
+      return reply.send(audio)
+    } catch (err: any) {
+      console.error('[TTS] ElevenLabs error:', err.message)
+    }
+  }
+
+  return reply.status(502).send({ error: 'TTS unavailable' })
+})
+
+// ─── TTS Voices — Google Thai + ElevenLabs ───
+app.get('/api/tts/voices', async () => {
+  const { listVoices } = await import('../ai/tts')
+  const { GOOGLE_THAI_VOICES } = await import('../ai/gtts')
+
+  const elevenVoices = await listVoices()
+  const googleVoices = GOOGLE_THAI_VOICES.map(v => ({
+    id:         v.id,
+    name:       v.name,
+    labels:     { gender: v.gender === 'FEMALE' ? 'female' : 'male', language: 'thai', tier: v.tier },
+    previewUrl: null,
+    category:   'google',
+  }))
+
+  const eleven = elevenVoices.map(v => ({
+    id:         v.voice_id,
+    name:       v.name,
+    labels:     v.labels,
+    previewUrl: v.preview_url,
+    category:   v.category,
+  }))
+
+  // Google Thai voices first, then ElevenLabs
+  return [...googleVoices, ...eleven]
+})
+
+// ─── Video Analysis — clip upload ───
+app.post('/api/analyze-video', async (req, reply) => {
+  const data = await req.file()
+  if (!data) return reply.status(400).send({ error: 'video file required' })
+
+  const mimeType = data.mimetype || 'video/mp4'
+  const prompt   = (req.query as any).prompt || 'วิเคราะห์วิดีโอนี้ สรุปเนื้อหา ประเด็นสำคัญ และ key insights เป็นภาษาไทย'
+
+  const chunks: Buffer[] = []
+  for await (const chunk of data.file) chunks.push(chunk)
+  const videoBuffer = Buffer.concat(chunks)
+
+  const { analyzeVideo } = await import('../ai/video')
+  const result = await analyzeVideo(videoBuffer, mimeType, prompt)
+
+  logAICall({ sessionId: randomUUID(), model: result.model, provider: 'google', taskType: 'video', routedBy: 'manual', promptTokens: 0, completionTokens: 0, costUsd: result.costUsd, latencyMs: 0 }).catch(console.error)
+
+  return result
+})
+
+// ─── Video Frame Analysis — live camera ───
+app.post('/api/analyze-frame', async (req, reply) => {
+  const { frameBase64, prompt, sessionId = randomUUID() } = req.body as { frameBase64: string; prompt?: string; sessionId?: string }
+  if (!frameBase64) return reply.status(400).send({ error: 'frameBase64 required' })
+
+  const { analyzeFrame } = await import('../ai/video')
+  const result = await analyzeFrame(frameBase64, prompt)
+
+  logAICall({ sessionId, model: result.model, provider: 'google', taskType: 'vision', routedBy: 'manual', promptTokens: 0, completionTokens: 0, costUsd: result.costUsd, latencyMs: 0 }).catch(console.error)
+
+  return result
 })
 
 // ─── Memory API ───
@@ -288,6 +472,56 @@ app.get('/api/billing/balances', async () => {
   return results
 })
 
+// ─── Projects API ───
+app.get('/api/projects', async () => {
+  const r = await db.query('SELECT project_id, name, status, description, claude_md_path FROM neo_projects ORDER BY name')
+  return r.rows
+})
+
+app.put('/api/projects/:projectId', async (req, reply) => {
+  const { projectId } = req.params as { projectId: string }
+  const { claude_md_path } = req.body as { claude_md_path?: string }
+  await db.query(
+    'UPDATE neo_projects SET claude_md_path = $1, updated_at = NOW() WHERE project_id = $2',
+    [claude_md_path ?? null, projectId]
+  )
+  return { ok: true }
+})
+
+// ─── Feedback API ───
+app.post('/api/feedback', async (req, reply) => {
+  const { userMessage = '', aiResponse = '', rating } = req.body as {
+    userMessage?: string
+    aiResponse?: string
+    rating: 'up' | 'down'
+  }
+  if (!rating || !['up', 'down'].includes(rating))
+    return reply.status(400).send({ error: 'rating required: up | down' })
+
+  const topic = userMessage.slice(0, 100)
+  const snippet = aiResponse.slice(0, 200)
+
+  if (rating === 'up') {
+    await saveMemory({
+      scope: 'jack',
+      category: 'preference',
+      content: `Jack ชอบวิธีที่ NEO ตอบเรื่อง: ${topic}`,
+      importance: 6,
+      source: 'feedback',
+    }).catch(console.error)
+  } else {
+    await saveMemory({
+      scope: 'jack',
+      category: 'insight',
+      content: `Jack ไม่พอใจคำตอบเรื่อง: ${topic}${snippet ? ` — NEO ตอบว่า: ${snippet}` : ''}`,
+      importance: 9,
+      source: 'feedback',
+    }).catch(console.error)
+  }
+
+  return { ok: true }
+})
+
 // ─── History API ───
 app.get('/api/history', async (req) => {
   const { search = '', source = '', limit = 50, offset = 0, date = '' } = req.query as any
@@ -368,7 +602,7 @@ Content:
 ${chunk}
 
 Extract 3-10 specific, actionable memories. Return ONLY a JSON array:
-[{"scope":"jack"|"project"|"global","category":"fact"|"decision"|"rule"|"preference"|"insight"|"context","content":"specific memory in Thai or English (max 150 chars)","importance":1-10,"projectId":"joyride"|"boonma"|"sabaidee"|"pawfect"|"neo"|null}]
+[{"scope":"jack"|"project"|"global","category":"fact"|"decision"|"rule"|"preference"|"insight"|"context","content":"specific memory in Thai or English (max 150 chars)","importance":1-10,"projectId":"known project_id from context or null"}]
 
 Rules:
 - importance 8-10: critical rules, key decisions, strong preferences
@@ -479,7 +713,7 @@ Content:
 ${chunk}
 
 Extract 3-10 specific, actionable memories. Return ONLY a JSON array:
-[{"scope":"jack"|"project"|"global","category":"fact"|"decision"|"rule"|"preference"|"insight"|"context","content":"specific memory in Thai or English (max 150 chars)","importance":1-10,"projectId":"joyride"|"boonma"|"sabaidee"|"pawfect"|"neo"|null}]
+[{"scope":"jack"|"project"|"global","category":"fact"|"decision"|"rule"|"preference"|"insight"|"context","content":"specific memory in Thai or English (max 150 chars)","importance":1-10,"projectId":"known project_id from context or null"}]
 
 Rules:
 - importance 8-10: critical rules, key decisions, strong preferences
@@ -501,6 +735,30 @@ Rules:
   }
 
   return { memories: allMemories, total: allMemories.length, chunks: chunks.length, filename }
+})
+
+// ─── Memory Export ───
+app.get('/api/memories/export', async (req, reply) => {
+  const { format = 'json' } = req.query as { format?: string }
+  const result = await db.query(
+    `SELECT id, scope, category, project_id, content, importance, source, created_at
+     FROM neo_memories ORDER BY importance DESC, created_at DESC`
+  )
+
+  if (format === 'csv') {
+    const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const header = 'id,scope,category,project_id,content,importance,source,created_at\n'
+    const rows = result.rows.map((r: any) =>
+      [r.id, r.scope, r.category, r.project_id ?? '', r.content, r.importance, r.source, r.created_at].map(esc).join(',')
+    ).join('\n')
+    reply.header('Content-Type', 'text/csv; charset=utf-8')
+    reply.header('Content-Disposition', `attachment; filename="neo-memories-${Date.now()}.csv"`)
+    return reply.send(header + rows)
+  }
+
+  reply.header('Content-Type', 'application/json; charset=utf-8')
+  reply.header('Content-Disposition', `attachment; filename="neo-memories-${Date.now()}.json"`)
+  return reply.send(JSON.stringify(result.rows, null, 2))
 })
 
 // ─── Memory Management — list ───
@@ -692,37 +950,175 @@ System: CPU ${system?.cpu?.usagePct}%, RAM ${system?.ram?.usedPct}%, Disk ${syst
   return { fixes: content }
 })
 
+// ─── Cron Jobs CRUD API ───
+
+app.get('/api/cron/jobs', async () => {
+  const r = await db.query(
+    'SELECT * FROM neo_cron_jobs ORDER BY created_at ASC'
+  ).catch(() => ({ rows: [] as any[] }))
+  return r.rows
+})
+
+app.post('/api/cron/jobs/parse', async (req, reply) => {
+  const { input } = req.body as { input: string }
+  if (!input?.trim()) return reply.status(400).send({ error: 'input required' })
+  try {
+    const { parseJobFromNL } = await import('../core/cron-manager')
+    const config = await parseJobFromNL(input.trim())
+    return config
+  } catch (err: any) {
+    return reply.status(500).send({ error: err.message })
+  }
+})
+
+app.post('/api/cron/jobs', async (req, reply) => {
+  const body = req.body as {
+    name: string; description?: string; schedule: string
+    action_type: string; action_config?: object; ai_model?: string; enabled?: boolean
+  }
+  if (!body.name || !body.schedule || !body.action_type)
+    return reply.status(400).send({ error: 'name, schedule, action_type required' })
+
+  const r = await db.query(
+    `INSERT INTO neo_cron_jobs (name, description, schedule, action_type, action_config, ai_model, enabled)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [body.name, body.description ?? null, body.schedule, body.action_type,
+     JSON.stringify(body.action_config ?? {}), body.ai_model ?? 'gemini', body.enabled ?? true]
+  )
+  const job = r.rows[0]
+  const { reloadJob } = await import('../core/cron-manager')
+  await reloadJob(job.id)
+  return job
+})
+
+app.put('/api/cron/jobs/:id', async (req, reply) => {
+  const { id } = req.params as { id: string }
+  const body = req.body as {
+    name?: string; description?: string; schedule?: string
+    action_type?: string; action_config?: object; ai_model?: string; enabled?: boolean
+  }
+  const r = await db.query(
+    `UPDATE neo_cron_jobs
+     SET name = COALESCE($1, name),
+         description = COALESCE($2, description),
+         schedule = COALESCE($3, schedule),
+         action_type = COALESCE($4, action_type),
+         action_config = COALESCE($5, action_config),
+         ai_model = COALESCE($6, ai_model),
+         enabled = COALESCE($7, enabled),
+         updated_at = NOW()
+     WHERE id = $8 RETURNING *`,
+    [body.name ?? null, body.description ?? null, body.schedule ?? null,
+     body.action_type ?? null, body.action_config ? JSON.stringify(body.action_config) : null,
+     body.ai_model ?? null, body.enabled ?? null, id]
+  ).catch(() => ({ rows: [] as any[] }))
+  if (!r.rows.length) return reply.status(404).send({ error: 'job not found' })
+  const { reloadJob } = await import('../core/cron-manager')
+  await reloadJob(id)
+  return r.rows[0]
+})
+
+app.delete('/api/cron/jobs/:id', async (req, reply) => {
+  const { id } = req.params as { id: string }
+  const { reloadJob } = await import('../core/cron-manager')
+  // Cancel schedule first
+  await db.query('UPDATE neo_cron_jobs SET enabled = false WHERE id = $1', [id]).catch(() => {})
+  await reloadJob(id)
+  const r = await db.query('DELETE FROM neo_cron_jobs WHERE id = $1 RETURNING id', [id])
+    .catch(() => ({ rowCount: 0 }))
+  if (!(r as any).rowCount) return reply.status(404).send({ error: 'job not found' })
+  return { ok: true, id }
+})
+
+app.post('/api/cron/jobs/:id/run', async (req, reply) => {
+  const { id } = req.params as { id: string }
+  const check = await db.query('SELECT id FROM neo_cron_jobs WHERE id = $1', [id])
+    .catch(() => ({ rows: [] as any[] }))
+  if (!check.rows.length) return reply.status(404).send({ error: 'job not found' })
+  const { runJobNow } = await import('../core/cron-manager')
+  runJobNow(id).catch(console.error)
+  return { ok: true, id, triggered: new Date() }
+})
+
 // ─── Cron Logs API ───
-app.get('/api/cron/logs', async () => {
+app.get('/api/cron/logs', async (req) => {
+  const { jobId, limit = 50 } = req.query as { jobId?: string; limit?: number }
   const [logs, summary] = await Promise.all([
+    db.query(
+      `SELECT id, job_name, status, message, details, ran_at, job_id
+       FROM neo_cron_logs
+       ${jobId ? 'WHERE job_id = $2' : ''}
+       ORDER BY ran_at DESC LIMIT $1`,
+      jobId ? [Number(limit), jobId] : [Number(limit)]
+    ).catch(() => ({ rows: [] as any[] })),
     db.query(`
-      SELECT id, job_name, status, message, details, ran_at
+      SELECT DISTINCT ON (job_name) job_name, status, message, details, ran_at, job_id
       FROM neo_cron_logs
-      ORDER BY ran_at DESC LIMIT 50
-    `).catch(() => ({ rows: [] as any[] })),
-    db.query(`
-      SELECT job_name, status, message, details, ran_at
-      FROM neo_cron_logs l1
-      WHERE ran_at = (
-        SELECT MAX(ran_at) FROM neo_cron_logs l2 WHERE l2.job_name = l1.job_name
-      )
-      ORDER BY job_name
+      ORDER BY job_name, ran_at DESC
     `).catch(() => ({ rows: [] as any[] })),
   ])
   return { logs: logs.rows, lastRuns: summary.rows }
 })
 
+// Legacy endpoint — find job by name in DB and run
 app.post('/api/cron/run/:job', async (req, reply) => {
   const { job } = req.params as { job: string }
-  const { runDailyCostReport, runWeeklyMemoryCleanup, runMonthlySpendAlert } = await import('../core/cron')
-  const jobs: Record<string, () => Promise<void>> = {
-    'daily-cost-report':    runDailyCostReport,
-    'weekly-memory-cleanup': runWeeklyMemoryCleanup,
-    'monthly-spend-alert':  runMonthlySpendAlert,
+  const nameMap: Record<string, string> = {
+    'daily-cost-report':    'Daily Cost Report',
+    'weekly-memory-cleanup': 'Weekly Memory Cleanup',
+    'monthly-spend-alert':  'Monthly Spend Alert',
   }
-  if (!jobs[job]) return reply.status(404).send({ error: 'unknown job' })
-  jobs[job]().catch(console.error)
+  const dbName = nameMap[job]
+  if (!dbName) return reply.status(404).send({ error: 'unknown job' })
+  const r = await db.query('SELECT id FROM neo_cron_jobs WHERE name = $1 LIMIT 1', [dbName])
+    .catch(() => ({ rows: [] as any[] }))
+  if (!r.rows.length) return reply.status(404).send({ error: 'job not in DB — run migration 004' })
+  const { runJobNow } = await import('../core/cron-manager')
+  runJobNow(r.rows[0].id).catch(console.error)
   return { ok: true, job, triggered: new Date() }
+})
+
+// ─── Deploy Request — notify Telegram + log ───
+app.post('/api/deploy', async (req, reply) => {
+  const { note = '' } = req.body as { note?: string }
+
+  const lastDeploy = await db.query(
+    `SELECT created_at, note FROM neo_deploy_log ORDER BY created_at DESC LIMIT 1`
+  ).catch(() => ({ rows: [] as any[] }))
+
+  const now = new Date()
+  await db.query(
+    `INSERT INTO neo_deploy_log (note, requested_at) VALUES ($1, NOW())
+     ON CONFLICT DO NOTHING`,
+    [note || 'manual']
+  ).catch(async () => {
+    // Table may not exist yet — create it
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS neo_deploy_log (
+        id SERIAL PRIMARY KEY,
+        note TEXT,
+        requested_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `).catch(console.error)
+    await db.query(`INSERT INTO neo_deploy_log (note) VALUES ($1)`, [note || 'manual']).catch(console.error)
+  })
+
+  const domain = process.env.NEO_DOMAIN ?? 'localhost'
+  const cmd = `cd ~/NEO-OS && git pull origin master && docker compose build --no-cache neo && docker compose up -d neo`
+  const msg = `🚀 NEO Deploy Request\n${note ? `Note: ${note}\n` : ''}\nเวลา: ${now.toLocaleString('th-TH')}\n\nรัน command:\n\`\`\`\n${cmd}\n\`\`\``
+
+  const { tgNotify } = await import('../core/cron')
+  tgNotify(msg).catch(console.error)
+
+  neoEvents.emit('neo', { type: 'deploy_requested', channel: 'system', data: { note, timestamp: now.toISOString() }, timestamp: Date.now() })
+
+  return {
+    ok: true,
+    requestedAt: now.toISOString(),
+    lastDeploy: lastDeploy.rows[0]?.created_at ?? null,
+    cmd,
+    message: 'Deploy request sent to Telegram — SSH in and run the command to apply',
+  }
 })
 
 // ─── SSE — Real-time push to Web UI ───

@@ -4,7 +4,7 @@ import { startWebServer } from './web/server'
 import { db, initMessageTable } from './db/client'
 import { seedJackProfile } from './core/seed'
 import { startMcpServer } from './mcp/server'
-import { startCronJobs } from './core/cron'
+import { startDynamicCron } from './core/cron-manager'
 
 async function main() {
   console.log('🧠 NEO starting...')
@@ -22,7 +22,40 @@ async function main() {
 
   startTelegramBot()
   startWebServer(Number(process.env.PORT) || 3000)
-  startCronJobs()
+  // Migration: add claude_md_path column if not exists
+  await db.query('ALTER TABLE neo_projects ADD COLUMN IF NOT EXISTS claude_md_path TEXT').catch(console.error)
+
+  await startDynamicCron()
+
+  // Seed memory synthesis cron job (once, idempotent)
+  await db.query(`
+    INSERT INTO neo_cron_jobs (name, description, schedule, action_type, action_config, ai_model, enabled)
+    SELECT $1, $2, $3, $4, $5::jsonb, $6, $7
+    WHERE NOT EXISTS (SELECT 1 FROM neo_cron_jobs WHERE name = $1)
+  `, [
+    'Memory Synthesis Nightly',
+    'สังเคราะห์ insights จาก memories 7 วัน → สร้าง pattern-level memories ทุกคืน 23:30',
+    '30 23 * * *',
+    'memory_synthesis',
+    '{}',
+    'claude-haiku',
+    true,
+  ]).catch(console.error)
+
+  // Seed project sync cron job (once, idempotent)
+  await db.query(`
+    INSERT INTO neo_cron_jobs (name, description, schedule, action_type, action_config, ai_model, enabled)
+    SELECT $1, $2, $3, $4, $5::jsonb, $6, $7
+    WHERE NOT EXISTS (SELECT 1 FROM neo_cron_jobs WHERE name = $1)
+  `, [
+    'Project Sync Daily',
+    'โหลด CLAUDE.md จากทุกโปรเจ็คบน server — บันทึกลง memory ทุกวันตี 2',
+    '0 2 * * *',
+    'project_sync',
+    '{}',
+    'none',
+    true,
+  ]).catch(console.error)
 
   // MCP Server รันผ่าน stdio — เปิดเฉพาะเมื่อถูกเรียกจาก IDE (ไม่ใช่ normal startup)
   if (process.env.NEO_MCP === '1') {

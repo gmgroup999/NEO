@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO — Login</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&family=Noto+Sans+Thai:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:     #04040a;
+  --s1:     #080810;
+  --s2:     #0d0d1a;
+  --border: rgba(255,255,255,0.07);
+  --accent: #00e5ff;
+  --accent2:#7c3aed;
+  --text:   #dde1f0;
+  --muted:  #525270;
+  --hermes: #10b981;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans Thai', sans-serif;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(0,229,255,0.04) 0%, transparent 70%);
+  top: -200px; left: -200px;
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 70%);
+  bottom: -150px; right: -150px;
+  pointer-events: none;
+}
+
+.card {
+  width: 360px;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px 36px 36px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 60px rgba(0,0,0,0.6);
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.logo-mark {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  font-size: 15px;
+  color: #000;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: var(--accent);
+}
+
+.tagline {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+
+.field-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.password-wrap {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.password-input {
+  width: 100%;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 12px 44px 12px 14px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none;
+  transition: border-color 0.15s;
+  letter-spacing: 2px;
+}
+
+.password-input:focus {
+  border-color: rgba(0,229,255,0.35);
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.05);
+}
+
+.password-input::placeholder {
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 16px;
+  padding: 2px;
+  transition: color 0.15s;
+}
+.toggle-btn:hover { color: var(--text); }
+
+.login-btn {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, var(--accent), #00b8d4);
+  border: none;
+  border-radius: 9px;
+  color: #000;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.login-btn:hover { opacity: 0.88; }
+.login-btn:active { transform: scale(0.98); }
+.login-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.error-msg {
+  display: none;
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 7px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: #ef4444;
+  text-align: center;
+}
+.error-msg.show { display: block; }
+
+.footer-note {
+  margin-top: 24px;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(0,0,0,0.3);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo-row">
+    <div class="logo-mark">N</div>
+    <div class="logo-text">NEO</div>
+  </div>
+  <div class="tagline">PERSONAL AI BRAIN · SECURE ACCESS</div>
+
+  <form id="login-form" onsubmit="onSubmit(event)">
+    <label class="field-label" for="pw">PASSWORD</label>
+    <div class="password-wrap">
+      <input
+        class="password-input"
+        type="password"
+        id="pw"
+        placeholder="Enter password"
+        autocomplete="current-password"
+        autofocus
+        required
+      >
+      <button type="button" class="toggle-btn" onclick="toggleShow()" title="แสดง/ซ่อนรหัสผ่าน" id="toggle-icon">👁</button>
+    </div>
+
+    <button class="login-btn" type="submit" id="login-btn">
+      <span id="btn-label">ENTER NEO</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+  </form>
+
+  <div class="error-msg" id="error-msg">รหัสผ่านไม่ถูกต้อง</div>
+
+  <div class="footer-note">NEO · Jack's Personal AI Brain</div>
+</div>
+
+<script>
+function toggleShow() {
+  const inp = document.getElementById('pw')
+  const icon = document.getElementById('toggle-icon')
+  inp.type = inp.type === 'password' ? 'text' : 'password'
+  icon.textContent = inp.type === 'password' ? '👁' : '🙈'
+}
+
+async function onSubmit(e) {
+  e.preventDefault()
+  const pw = document.getElementById('pw').value
+  const btn = document.getElementById('login-btn')
+  const label = document.getElementById('btn-label')
+  const spinner = document.getElementById('spinner')
+  const errorEl = document.getElementById('error-msg')
+
+  btn.disabled = true
+  label.style.display = 'none'
+  spinner.style.display = 'block'
+  errorEl.classList.remove('show')
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw }),
+    })
+
+    if (res.ok) {
+      // Login success — ไปหน้าหลัก
+      const redirect = new URLSearchParams(location.search).get('redirect') || '/'
+      location.href = redirect
+    } else {
+      const data = await res.json().catch(() => ({}))
+      errorEl.textContent = data.error || 'รหัสผ่านไม่ถูกต้อง'
+      errorEl.classList.add('show')
+      document.getElementById('pw').value = ''
+      document.getElementById('pw').focus()
+    }
+  } catch {
+    errorEl.textContent = 'เชื่อมต่อ server ไม่ได้'
+    errorEl.classList.add('show')
+  } finally {
+    btn.disabled = false
+    label.style.display = 'block'
+    spinner.style.display = 'none'
+  }
+}
+</script>
+</body>
+</html>
