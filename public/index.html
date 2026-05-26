@@ -592,6 +592,63 @@ body::after {
 .send-btn:hover { opacity: 0.85; transform: scale(0.96); }
 .send-btn svg { width: 15px; height: 15px; fill: #000; }
 
+/* Image upload */
+.img-attach-btn {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: var(--s3);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  font-size: 16px;
+  color: var(--muted);
+}
+.img-attach-btn:hover { border-color: var(--border2); color: var(--text); }
+
+.img-preview-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.img-preview {
+  max-height: 120px;
+  max-width: 220px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  display: block;
+}
+.img-preview-remove {
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: none;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.img-preview-label {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* drag-over highlight */
+.input-wrap.drag-over {
+  border-color: rgba(0,229,255,0.5);
+  background: rgba(0,229,255,0.04);
+}
+
 .input-hints {
   display: flex;
   gap: 16px;
@@ -634,6 +691,843 @@ kbd {
   width: 5px; height: 5px;
   border-radius: 50%;
 }
+
+/* ── USAGE PANEL ── */
+.usage-panel {
+  display: none;
+  position: fixed;
+  top: 0; right: 0;
+  width: 360px;
+  height: 100vh;
+  background: var(--s1);
+  border-left: 1px solid var(--border);
+  z-index: 100;
+  flex-direction: column;
+  overflow: hidden;
+}
+.usage-panel.open { display: flex; }
+
+.usage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+.usage-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 16px;
+  padding: 2px 6px; border-radius: 4px;
+}
+.usage-close:hover { color: var(--text); background: var(--s3); }
+
+.usage-body { flex: 1; overflow-y: auto; padding: 14px 18px; }
+
+.usage-period {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.period-card {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.period-label {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.period-cost {
+  font-size: 15px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  color: var(--gold);
+}
+.period-sub {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.usage-section-title {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin: 14px 0 8px;
+}
+
+.model-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  margin-bottom: 4px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+}
+.model-row-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  flex: 1;
+  color: var(--text);
+}
+.model-row-calls {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.model-row-cost {
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--gold);
+  min-width: 60px;
+  text-align: right;
+}
+.model-bar-wrap {
+  width: 100%;
+  height: 3px;
+  background: var(--s3);
+  border-radius: 2px;
+  margin-top: 5px;
+}
+.model-bar { height: 3px; border-radius: 2px; background: var(--accent); }
+
+.recent-call {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+}
+.recent-model { color: var(--text); min-width: 90px; }
+.recent-cost { color: var(--gold); margin-left: auto; }
+.recent-ms { color: var(--muted2); min-width: 50px; text-align: right; }
+
+.billing-links {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.billing-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.12s;
+  margin-bottom: 4px;
+}
+.billing-link:hover { background: var(--s2); color: var(--text); }
+.billing-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── HISTORY PANEL ── */
+.history-panel {
+  display: none;
+  position: fixed;
+  top: 0; right: 0;
+  width: 480px;
+  height: 100vh;
+  background: var(--s1);
+  border-left: 1px solid var(--border);
+  z-index: 100;
+  flex-direction: column;
+}
+.history-panel.open { display: flex; }
+
+.history-toolbar {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.history-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.history-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+.history-filters {
+  display: flex;
+  gap: 6px;
+}
+.history-search {
+  flex: 1;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'Noto Sans Thai', sans-serif;
+  outline: none;
+}
+.history-search:focus { border-color: rgba(0,229,255,0.3); }
+.history-search::placeholder { color: var(--muted); }
+.history-select {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none;
+  cursor: pointer;
+}
+.history-select:focus { border-color: rgba(0,229,255,0.3); }
+
+.history-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 8px;
+}
+.history-count {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 8px 16px 4px;
+}
+.history-day-group { margin-bottom: 4px; }
+.history-day-label {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 1.5px;
+  color: var(--muted2);
+  padding: 10px 16px 4px;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  background: var(--s1);
+  z-index: 1;
+}
+.hist-msg {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.hist-msg:hover { background: var(--s2); }
+.hist-msg-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.hist-role {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.hist-role.user { background: rgba(0,229,255,0.12); color: var(--accent); }
+.hist-role.assistant { background: rgba(124,58,237,0.15); color: #a78bfa; }
+.hist-source {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted2);
+}
+.hist-source.tg { color: #29b6f6; }
+.hist-time {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted2);
+  margin-left: auto;
+}
+.hist-model {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted2);
+}
+.hist-content {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+.hist-content.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+}
+.hist-cost {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--gold);
+  margin-top: 3px;
+}
+.history-load-more {
+  margin: 12px 16px;
+  padding: 8px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  cursor: pointer;
+  width: calc(100% - 32px);
+  transition: all 0.12s;
+}
+.history-load-more:hover { color: var(--text); border-color: var(--border2); }
+mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px; padding: 0 1px; }
+
+/* TTS */
+.tts-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.tts-btn:hover { color: var(--accent); background: rgba(0,229,255,0.07); }
+.tts-btn.speaking { color: var(--accent); animation: tts-pulse 1s ease-in-out infinite; }
+
+.tts-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.tts-toggle input { cursor: pointer; accent-color: var(--accent); }
+
+.tts-speed {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+}
+.tts-speed input[type=range] {
+  width: 70px;
+  height: 3px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+.tts-speed-val {
+  min-width: 26px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+@keyframes tts-pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── IMPORT PANEL ── */
+.import-panel {
+  display: none;
+  position: fixed;
+  top: 0; right: 0;
+  width: 380px;
+  height: 100vh;
+  background: var(--s1);
+  border-left: 1px solid var(--border);
+  z-index: 100;
+  flex-direction: column;
+}
+.import-panel.open { display: flex; }
+
+.import-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+
+.import-body { flex: 1; overflow-y: auto; padding: 16px 18px; }
+
+.import-dropzone {
+  border: 2px dashed var(--border2);
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 14px;
+}
+.import-dropzone:hover, .import-dropzone.drag-over {
+  border-color: rgba(0,229,255,0.4);
+  background: rgba(0,229,255,0.03);
+}
+.import-dropzone .drop-icon { font-size: 32px; margin-bottom: 10px; }
+.import-dropzone .drop-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.import-dropzone .drop-hint {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+}
+
+.import-field {
+  margin-bottom: 12px;
+}
+.import-field label {
+  display: block;
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.import-select, .import-input {
+  width: 100%;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 10px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none;
+}
+.import-select:focus, .import-input:focus { border-color: rgba(0,229,255,0.3); }
+.import-input::placeholder { color: var(--muted); }
+
+.import-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, var(--accent), #00b8d4);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 4px;
+}
+.import-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.import-btn:not(:disabled):hover { opacity: 0.85; }
+
+.import-file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.import-file-name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-file-size { color: var(--muted); flex-shrink: 0; }
+.import-file-remove {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 14px; line-height: 1;
+  padding: 0 2px; border-radius: 3px;
+}
+.import-file-remove:hover { color: #ef4444; }
+
+.import-progress {
+  display: none;
+  margin: 12px 0;
+}
+.import-progress-bar-wrap {
+  height: 4px;
+  background: var(--s3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.import-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 3px;
+  animation: progress-pulse 1.5s ease-in-out infinite;
+}
+@keyframes progress-pulse {
+  0%,100% { width: 30%; margin-left: 0; }
+  50% { width: 60%; margin-left: 20%; }
+}
+.import-progress-label {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+  text-align: center;
+}
+
+.import-result {
+  display: none;
+  background: rgba(16,185,129,0.06);
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 12px;
+}
+.import-result.error {
+  background: rgba(239,68,68,0.06);
+  border-color: rgba(239,68,68,0.2);
+}
+.import-result-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--hermes);
+  margin-bottom: 6px;
+}
+.import-result.error .import-result-title { color: #ef4444; }
+.import-result-stat {
+  font-size: 22px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  color: var(--hermes);
+  margin-bottom: 2px;
+}
+.import-result.error .import-result-stat { font-size: 13px; color: #ef4444; }
+.import-result-sub {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+}
+
+.import-history {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.import-history-title {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.import-history-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+}
+.import-history-name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-history-count { color: var(--hermes); }
+.import-history-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 13px; padding: 0 2px;
+  border-radius: 3px; line-height: 1; flex-shrink: 0;
+  transition: color 0.15s;
+}
+.import-history-del:hover { color: #ef4444; }
+.import-history-del:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.import-confirm {
+  display: none;
+  background: rgba(239,68,68,0.06);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 4px;
+}
+.import-confirm.show { display: block; }
+.import-confirm-msg {
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.import-confirm-msg strong { color: #ef4444; }
+.import-confirm-btns { display: flex; gap: 6px; }
+.import-confirm-yes {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.import-confirm-yes:hover { opacity: 0.85; }
+.import-confirm-yes:disabled { opacity: 0.4; cursor: not-allowed; }
+.import-confirm-no {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--s3);
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.import-confirm-no:hover { color: var(--text); border-color: var(--border2); }
+
+/* ── MEMORY MANAGEMENT PANEL ── */
+.mem-panel {
+  display: none;
+  position: fixed;
+  top: 0; right: 0;
+  width: 500px;
+  height: 100vh;
+  background: var(--s1);
+  border-left: 1px solid var(--border);
+  z-index: 100;
+  flex-direction: column;
+}
+.mem-panel.open { display: flex; }
+
+.mem-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: #a78bfa;
+  gap: 8px;
+}
+
+.mem-panel-filters {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--s2);
+  flex-wrap: wrap;
+}
+
+.mem-filter-input {
+  flex: 1;
+  min-width: 140px;
+  background: var(--s3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 9px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none;
+}
+.mem-filter-input:focus { border-color: rgba(167,139,250,0.4); }
+.mem-filter-input::placeholder { color: var(--muted); }
+
+.mem-filter-select {
+  background: var(--s3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none;
+  cursor: pointer;
+}
+.mem-filter-select:focus { border-color: rgba(167,139,250,0.4); }
+
+.mem-list { flex: 1; overflow-y: auto; padding: 8px 12px; }
+
+.mem-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: var(--s2);
+  transition: border-color 0.15s;
+}
+.mem-item:hover { border-color: var(--border2); }
+
+.mem-item-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.mem-badge {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.mem-badge.scope-jack   { background: rgba(0,229,255,0.1); color: var(--accent); }
+.mem-badge.scope-project{ background: rgba(167,139,250,0.1); color: #a78bfa; }
+.mem-badge.scope-global { background: rgba(251,146,60,0.1); color: #fb923c; }
+.mem-badge.cat           { background: rgba(255,255,255,0.05); color: var(--muted); }
+.mem-badge.proj          { background: rgba(16,185,129,0.1); color: var(--hermes); }
+
+.mem-importance {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--gold);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.mem-content {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.mem-content-edit {
+  width: 100%;
+  background: var(--s3);
+  border: 1px solid rgba(167,139,250,0.4);
+  border-radius: 5px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'Noto Sans Thai', sans-serif;
+  resize: vertical;
+  outline: none;
+  min-height: 56px;
+}
+
+.mem-item-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.mem-item:hover .mem-item-actions { opacity: 1; }
+
+.mem-action-btn {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  background: var(--s3);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.mem-action-btn:hover { color: var(--text); }
+.mem-action-btn.danger:hover { color: #ef4444; border-color: rgba(239,68,68,0.4); }
+.mem-action-btn.save-btn { color: var(--hermes); border-color: rgba(16,185,129,0.4); }
+
+.mem-source {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted2);
+  margin-top: 3px;
+}
+
+.mem-panel-footer {
+  border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+}
+
+/* ── IMPORT PREVIEW ── */
+.import-preview-box {
+  display: none;
+  background: rgba(124,58,237,0.05);
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 8px;
+  margin: 10px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.import-preview-box.show { display: block; }
+.import-preview-header {
+  padding: 8px 12px;
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 1.5px;
+  color: #a78bfa;
+  border-bottom: 1px solid rgba(124,58,237,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.import-preview-item {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.import-preview-item:last-child { border-bottom: none; }
+.import-preview-meta {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+/* ── TTS VOICE SELECTOR ── */
+.tts-voice-select {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none;
+  cursor: pointer;
+}
+.tts-voice-select:focus { border-color: rgba(0,229,255,0.3); }
 </style>
 </head>
 <body>
@@ -724,6 +1618,11 @@ kbd {
       <div style="font-size:9px;letter-spacing:1.5px;color:#525270;font-family:'IBM Plex Mono',monospace;margin-bottom:4px">📱 TELEGRAM</div>
       <div id="tg-activity" style="min-height:14px"></div>
     </div>
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)">
+      <button onclick="logout()" style="width:100%;background:none;border:1px solid rgba(255,255,255,0.07);border-radius:6px;padding:5px 10px;color:var(--muted);font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.15s;text-align:left" onmouseover="this.style.color='#ef4444';this.style.borderColor='rgba(239,68,68,0.3)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='rgba(255,255,255,0.07)'">
+        🔒 Logout
+      </button>
+    </div>
   </div>
 </div>
 
@@ -742,121 +1641,17 @@ kbd {
         <div class="mode-dot"></div>
         Auto-route · ON
       </div>
+      <button onclick="toggleUsage()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📊 Usage</button>
+      <button onclick="toggleHistory()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">💬 History</button>
+      <button onclick="toggleImport()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📚 Learn</button>
+      <button onclick="toggleMemPanel()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">🧠 Memories</button>
     </div>
   </div>
 
   <!-- Messages -->
   <div class="messages" id="messages">
 
-    <div class="sys-msg">── NEO SESSION · 142 MEMORIES LOADED · z-node.cc ──</div>
-
-    <!-- NEO greeting -->
-    <div class="msg neo">
-      <div class="avatar neo">N</div>
-      <div class="msg-body">
-        <div class="bubble">
-          สวัสดีครับ Jack 👋<br><br>
-          NEO พร้อมแล้ว — จำ context ของทุก project ไว้แล้วครับ<br>
-          คุยได้เลย หรือพิมพ์ <strong style="color:var(--dalle)">สร้างภาพ...</strong> เพื่อให้ DALL-E 3 สร้างภาพให้ครับ
-        </div>
-        <div class="msg-meta">
-          <span class="model-badge badge-hermes">Hermes 4 · local</span>
-          <span class="meta-cost">$0.00</span>
-          <span class="mem-used">142 memories loaded</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- User: code question -->
-    <div class="msg user">
-      <div class="avatar jack">J</div>
-      <div class="msg-body">
-        <div class="bubble">JoyRide rider reconnect bug ยังแก้ไม่ได้ มีวิธีอื่นไหม</div>
-      </div>
-    </div>
-
-    <!-- NEO: code response with memory -->
-    <div class="msg neo">
-      <div class="avatar neo">N</div>
-      <div class="msg-body">
-        <div class="recall-box">
-          <div class="recall-title">◈ MEMORY RECALLED — JoyRide</div>
-          <div class="recall-item">one-active-job guard: DB trigger + TypeScript + RLS</div>
-          <div class="recall-item">race condition เมื่อ rider offline แล้ว reconnect เร็ว</div>
-          <div class="recall-item">Golden Rule: ห้าม rename/delete schema, Supabase only</div>
-        </div>
-        <div class="bubble">
-          ลองแก้ด้วย <strong style="color:var(--accent)">Supabase Realtime presence</strong> แทน polling ครับ — ไม่มี race condition:<br><br>
-          <code style="background:var(--s3);padding:2px 6px;border-radius:4px;font-size:12px">channel.on('presence', { event: 'sync' }, () => syncRiderState())</code><br><br>
-          Presence sync อัตโนมัติเมื่อ connection กลับมา ไม่ต้อง debounce เองครับ
-        </div>
-        <div class="msg-meta">
-          <span class="model-badge badge-claude">Claude Sonnet · api</span>
-          <span class="meta-cost">$0.004</span>
-          <span class="mem-used">3 memories used</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- User: image request -->
-    <div class="msg user">
-      <div class="avatar jack">J</div>
-      <div class="msg-body">
-        <div class="bubble">สร้างภาพ logo NEO สไตล์ minimal dark มี circuit pattern สีฟ้า</div>
-      </div>
-    </div>
-
-    <!-- NEO: image response -->
-    <div class="msg neo">
-      <div class="avatar neo">N</div>
-      <div class="msg-body">
-        <div class="bubble">กำลังสร้างภาพด้วย DALL-E 3 ครับ...</div>
-        <div class="img-bubble">
-          <!-- Placeholder image representing generated result -->
-          <div style="
-            width:100%;
-            height:280px;
-            background: linear-gradient(135deg, #04040a 0%, #0a0a18 40%, #050510 100%);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            position:relative;
-            overflow:hidden;
-          ">
-            <!-- Circuit pattern SVG -->
-            <svg width="100%" height="100%" style="position:absolute;inset:0;opacity:0.3" viewBox="0 0 420 280">
-              <line x1="0" y1="80" x2="420" y2="80" stroke="#00e5ff" stroke-width="0.5" opacity="0.4"/>
-              <line x1="0" y1="200" x2="420" y2="200" stroke="#00e5ff" stroke-width="0.5" opacity="0.3"/>
-              <line x1="100" y1="0" x2="100" y2="280" stroke="#00e5ff" stroke-width="0.5" opacity="0.3"/>
-              <line x1="320" y1="0" x2="320" y2="280" stroke="#00e5ff" stroke-width="0.5" opacity="0.4"/>
-              <circle cx="100" cy="80" r="4" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.6"/>
-              <circle cx="320" cy="80" r="4" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.6"/>
-              <circle cx="100" cy="200" r="4" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.6"/>
-              <circle cx="320" cy="200" r="4" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.6"/>
-              <line x1="100" y1="80" x2="160" y2="80" stroke="#00e5ff" stroke-width="1.5" opacity="0.5"/>
-              <line x1="260" y1="80" x2="320" y2="80" stroke="#00e5ff" stroke-width="1.5" opacity="0.5"/>
-              <rect x="160" y="70" width="100" height="20" rx="2" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.3"/>
-            </svg>
-            <!-- NEO logo center -->
-            <div style="
-              width:90px;height:90px;
-              background:linear-gradient(135deg,#00e5ff,#7c3aed);
-              border-radius:20px;
-              display:flex;align-items:center;justify-content:center;
-              font-family:'IBM Plex Mono',monospace;
-              font-size:36px;font-weight:700;color:#000;
-              box-shadow:0 0 40px rgba(0,229,255,0.4);
-              position:relative;z-index:1;
-            ">N</div>
-          </div>
-          <div class="img-overlay">DALL-E 3 · NEO Logo Concept · 1024×1024</div>
-        </div>
-        <div class="msg-meta" style="margin-top:8px">
-          <span class="model-badge badge-dalle">DALL-E 3 · image</span>
-          <span class="meta-cost">$0.040 · 1024×1024</span>
-        </div>
-      </div>
-    </div>
+    <div class="sys-msg" id="sys-msg">── NEO SESSION · LOADING... ──</div>
 
     <!-- Typing (hidden) -->
     <div class="typing-wrap" id="typing" style="display:none">
@@ -881,10 +1676,21 @@ kbd {
       <div class="qa-btn image" onclick="insertText('สร้างภาพ ')">🎨 สร้างภาพ</div>
     </div>
 
-    <div class="input-wrap">
+    <div id="img-preview-area" style="display:none;padding:0 2px 4px">
+      <div class="img-preview-wrap">
+        <img id="img-preview" class="img-preview" src="" alt="preview">
+        <button class="img-preview-remove" onclick="clearImage()" title="ลบรูป">✕</button>
+      </div>
+      <div class="img-preview-label" id="img-preview-label">📎 รูปแนบ — GPT-4o จะวิเคราะห์</div>
+    </div>
+
+    <div class="input-wrap" id="input-wrap"
+      ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <button class="img-attach-btn" onclick="document.getElementById('file-input').click()" title="แนบรูป (หรือ Ctrl+V วางจาก clipboard)">📎</button>
+      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="onFileSelect(event)">
       <textarea
         id="inp"
-        placeholder="คุยกับ NEO... หรือพิมพ์ สร้างภาพ เพื่อสร้างรูป"
+        placeholder="คุยกับ NEO... วางรูปด้วย Ctrl+V หรือกด 📎"
         rows="1"
         onkeydown="onKey(event)"
         oninput="resize(this)"
@@ -898,9 +1704,22 @@ kbd {
       <div class="hint"><kbd>Enter</kbd> ส่ง</div>
       <div class="hint"><kbd>Shift+Enter</kbd> ขึ้นบรรทัด</div>
       <div class="hint-right">
+        <label class="tts-toggle" title="Auto-speak NEO responses">
+          <input type="checkbox" id="tts-auto" onchange="onTtsToggle(this)">
+          🔊 auto-speak
+        </label>
+        <select class="tts-voice-select" id="tts-voice" onchange="onVoiceChange(this)" title="TTS Voice">
+          <option value="female">♀ Female</option>
+          <option value="male">♂ Male</option>
+        </select>
+        <div class="tts-speed">
+          <span>🐢</span>
+          <input type="range" id="tts-speed" min="0.5" max="2.0" step="0.25" value="1.0" oninput="onSpeedChange(this)">
+          <span>🐇</span>
+          <span class="tts-speed-val" id="tts-speed-val">1×</span>
+        </div>
         <div class="model-hint"><div class="dot" style="background:var(--hermes)"></div>Hermes</div>
         <div class="model-hint"><div class="dot" style="background:var(--claude)"></div>Claude</div>
-        <div class="model-hint"><div class="dot" style="background:var(--dalle)"></div>DALL-E</div>
         <div class="model-hint" style="color:var(--muted)">auto-routed</div>
       </div>
     </div>
@@ -909,6 +1728,225 @@ kbd {
 
 <script>
 let sessionId = crypto.randomUUID()
+let attachedImage = null  // { base64: string, mime: string, name: string }
+
+// ─── Image helpers ───
+function resizeImageToBase64(file, maxPx = 1280) {
+  return new Promise(resolve => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { width: w, height: h } = img
+      if (w > maxPx || h > maxPx) {
+        if (w > h) { h = Math.round(h * maxPx / w); w = maxPx }
+        else       { w = Math.round(w * maxPx / h); h = maxPx }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w; canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+      const base64 = canvas.toDataURL(mime, 0.85).split(',')[1]
+      resolve({ base64, mime, name: file.name ?? 'image' })
+    }
+    img.src = url
+  })
+}
+
+function setAttachedImage(imgObj) {
+  attachedImage = imgObj
+  const preview = document.getElementById('img-preview')
+  const area = document.getElementById('img-preview-area')
+  const label = document.getElementById('img-preview-label')
+  preview.src = `data:${imgObj.mime};base64,${imgObj.base64}`
+  area.style.display = 'block'
+  label.textContent = `📎 ${imgObj.name} — GPT-4o จะวิเคราะห์`
+}
+
+function clearImage() {
+  attachedImage = null
+  document.getElementById('img-preview-area').style.display = 'none'
+  document.getElementById('img-preview').src = ''
+  document.getElementById('file-input').value = ''
+}
+
+async function onFileSelect(e) {
+  const file = e.target.files[0]
+  if (!file || !file.type.startsWith('image/')) return
+  setAttachedImage(await resizeImageToBase64(file))
+}
+
+// Paste จาก clipboard
+document.addEventListener('paste', async (e) => {
+  const items = e.clipboardData?.items
+  if (!items) return
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault()
+      const file = item.getAsFile()
+      if (file) setAttachedImage(await resizeImageToBase64(file))
+      break
+    }
+  }
+})
+
+// Drag & Drop
+function onDragOver(e) {
+  e.preventDefault()
+  document.getElementById('input-wrap').classList.add('drag-over')
+}
+function onDragLeave() {
+  document.getElementById('input-wrap').classList.remove('drag-over')
+}
+async function onDrop(e) {
+  e.preventDefault()
+  document.getElementById('input-wrap').classList.remove('drag-over')
+  const file = e.dataTransfer?.files[0]
+  if (file && file.type.startsWith('image/')) {
+    setAttachedImage(await resizeImageToBase64(file))
+  }
+}
+let conversationHistory = []  // [{role:'user'|'assistant', content:'...'}]
+const MAX_HISTORY = 20  // keep last 20 turns (10 exchanges)
+
+// ─── TTS ───
+let ttsAutoSpeak = false
+let ttsAudioQueue = []
+let ttsPlaying = false
+let ttsSpeed = 1.0
+
+function onTtsToggle(el) {
+  ttsAutoSpeak = el.checked
+  if (!ttsAutoSpeak) ttsStop()
+}
+
+function onSpeedChange(el) {
+  ttsSpeed = parseFloat(el.value)
+  const label = ttsSpeed === 1.0 ? '1×' : ttsSpeed + '×'
+  document.getElementById('tts-speed-val').textContent = label
+}
+
+function ttsStop() {
+  ttsPlaying = false
+  ttsAudioQueue = []
+  speechSynthesis.cancel()
+  // Stop any playing Audio elements
+  document.querySelectorAll('.tts-audio').forEach(a => { a.pause(); a.remove() })
+  document.querySelectorAll('.tts-btn').forEach(b => b.classList.remove('speaking'))
+}
+
+function hasThai(text) {
+  return /[฀-๿]/.test(text)
+}
+
+function stripMarkdownForTts(text) {
+  return text
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]+`/g, '')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/[-*+]\s/g, '')
+    .replace(/\n+/g, ' ')
+    .trim()
+}
+
+// แบ่ง text ที่ยาวเป็น chunk ≤ 200 ตัว (ขีดจำกัด Google TTS)
+function splitChunks(text, max = 200) {
+  const chunks = []
+  // แบ่งที่ sentence boundary ก่อน
+  const sentences = text.split(/(?<=[.!?।।\n])\s+|(?<=[๏๚๛])\s*/)
+  let buf = ''
+  for (const s of sentences) {
+    if ((buf + s).length <= max) {
+      buf += (buf ? ' ' : '') + s
+    } else {
+      if (buf) chunks.push(buf.trim())
+      // ถ้า sentence เดี่ยวยาวเกิน ตัดที่ช่องว่าง
+      if (s.length > max) {
+        const words = s.split(' ')
+        buf = ''
+        for (const w of words) {
+          if ((buf + ' ' + w).length > max) { chunks.push(buf.trim()); buf = w }
+          else buf = buf ? buf + ' ' + w : w
+        }
+      } else { buf = s }
+    }
+  }
+  if (buf.trim()) chunks.push(buf.trim())
+  return chunks.filter(c => c.length > 0)
+}
+
+// Google TTS ผ่าน NEO proxy (หลีก CORS)
+async function speakGoogleTTS(text, lang, btnEl) {
+  const chunks = splitChunks(text)
+  ttsPlaying = true
+
+  for (const chunk of chunks) {
+    if (!ttsPlaying) break
+    const url = `/api/tts?lang=${lang}&text=${encodeURIComponent(chunk)}`
+    await new Promise(resolve => {
+      const audio = new Audio(url)
+      audio.className = 'tts-audio'
+      audio.playbackRate = ttsSpeed
+      audio.onended = () => { audio.remove(); resolve() }
+      audio.onerror = () => { audio.remove(); resolve() }
+      document.body.appendChild(audio)
+      audio.play().catch(() => resolve())
+    })
+  }
+
+  ttsPlaying = false
+  if (btnEl) btnEl.classList.remove('speaking')
+}
+
+// Web Speech API — สำหรับ English (ถ้าไม่มี Thai voice)
+function speakWebSpeech(text, btnEl) {
+  if (!('speechSynthesis' in window)) return
+  speechSynthesis.cancel()
+  const u = new SpeechSynthesisUtterance(text)
+  u.lang = 'en-US'
+  u.rate = ttsSpeed
+  if (btnEl) {
+    u.onend = () => btnEl.classList.remove('speaking')
+    u.onerror = () => btnEl.classList.remove('speaking')
+  }
+  speechSynthesis.speak(u)
+}
+
+async function speak(text, btnEl) {
+  ttsStop()
+  const clean = stripMarkdownForTts(text)
+  if (!clean) return
+  if (btnEl) btnEl.classList.add('speaking')
+
+  const voiceMode = (typeof ttsVoiceMode !== 'undefined') ? ttsVoiceMode : 'female'
+
+  if (voiceMode === 'male' && 'speechSynthesis' in window) {
+    speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(clean)
+    u.lang = 'th-TH'
+    u.pitch = 0.7
+    u.rate = ttsSpeed
+    const voices = speechSynthesis.getVoices()
+    const thVoice = voices.find(v => v.lang.startsWith('th'))
+    if (thVoice) u.voice = thVoice
+    if (btnEl) {
+      u.onend = () => { ttsPlaying = false; btnEl.classList.remove('speaking') }
+      u.onerror = () => { ttsPlaying = false; btnEl.classList.remove('speaking') }
+    }
+    ttsPlaying = true
+    speechSynthesis.speak(u)
+  } else if (hasThai(clean)) {
+    await speakGoogleTTS(clean, 'th', btnEl)
+  } else {
+    speakWebSpeech(clean, btnEl)
+  }
+}
+
+speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices()
 
 const modelBadge = {
   'hermes':        { cls: 'badge-hermes',   label: 'Hermes 4 · local' },
@@ -935,6 +1973,11 @@ function insertText(t) {
   inp.value = t
   inp.focus()
   resize(inp)
+}
+
+async function logout() {
+  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+  location.href = '/login'
 }
 
 function escHtml(s) {
@@ -971,18 +2014,32 @@ function renderTextResponse(data) {
   const badge = modelBadge[data.model] ?? { cls: 'badge-hermes', label: data.model }
   const cost = data.costUsd === 0 ? '$0.00' : `$${data.costUsd.toFixed(5)}`
   const routeTag = data.routedBy === 'manual' ? ' · manual' : ''
+  const msgId = 'msg-' + Math.random().toString(36).slice(2, 8)
   addMsg(`
-    <div class="msg neo">
+    <div class="msg neo" id="${msgId}">
       <div class="avatar neo">N</div>
       <div class="msg-body">
         <div class="bubble markdown-body">${renderMarkdown(data.content)}</div>
         <div class="msg-meta">
           <span class="model-badge ${badge.cls}">${badge.label}${routeTag}</span>
           <span class="meta-cost">${cost} · ⚡${data.latencyMs}ms</span>
+          <button class="tts-btn" title="อ่านออกเสียง" onclick="ttsClick(this,'${msgId}')">🔊</button>
         </div>
       </div>
     </div>
   `)
+
+  if (ttsAutoSpeak) {
+    const btn = document.querySelector(`#${msgId} .tts-btn`)
+    speak(data.content, btn)
+  }
+}
+
+function ttsClick(btn, msgId) {
+  // กดซ้ำ = หยุด
+  if (ttsPlaying || speechSynthesis.speaking) { ttsStop(); return }
+  const bubble = document.querySelector(`#${msgId} .bubble`)
+  speak(bubble?.innerText ?? '', btn)
 }
 
 function renderImageResponse(data) {
@@ -1020,30 +2077,43 @@ async function send() {
   const text = inp.value.trim()
   if (!text) return
 
+  const imgPreviewHtml = attachedImage
+    ? `<img src="data:${attachedImage.mime};base64,${attachedImage.base64}" style="max-height:160px;max-width:280px;border-radius:8px;display:block;margin-top:6px">`
+    : ''
   addMsg(`
     <div class="msg user">
       <div class="avatar jack">J</div>
       <div class="msg-body">
-        <div class="bubble">${escHtml(text).replace(/\n/g,'<br>')}</div>
+        <div class="bubble">${escHtml(text).replace(/\n/g,'<br>')}${imgPreviewHtml}</div>
       </div>
     </div>
   `)
 
+  const imgToSend = attachedImage  // capture ก่อน clear
+
   inp.value = ''
   inp.style.height = 'auto'
+  clearImage()
   showTyping()
 
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, sessionId }),
+      body: JSON.stringify({
+        message: text,
+        sessionId,
+        history: conversationHistory,
+        imageBase64: imgToSend?.base64 ?? undefined,
+        imageMime: imgToSend?.mime ?? undefined,
+      }),
     })
 
     hideTyping()
 
     if (!res.ok) {
-      renderError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      const err = await res.json().catch(() => ({}))
+      renderError(err.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
       return
     }
 
@@ -1052,8 +2122,18 @@ async function send() {
 
     if (data.type === 'image') {
       renderImageResponse(data)
+      // Image responses: just push a note into history so context is preserved
+      conversationHistory.push({ role: 'user', content: text })
+      conversationHistory.push({ role: 'assistant', content: `[สร้างภาพ: ${data.revisedPrompt ?? text}]` })
     } else {
       renderTextResponse(data)
+      conversationHistory.push({ role: 'user', content: text })
+      conversationHistory.push({ role: 'assistant', content: data.content })
+    }
+
+    // Keep history bounded
+    if (conversationHistory.length > MAX_HISTORY) {
+      conversationHistory = conversationHistory.slice(-MAX_HISTORY)
     }
   } catch (e) {
     hideTyping()
@@ -1064,7 +2144,7 @@ async function send() {
 }
 
 // ─── Status refresh ───
-async function loadStatus() {
+async function loadStatus(isFirst = false) {
   try {
     const res = await fetch('/api/status')
     if (!res.ok) return
@@ -1074,11 +2154,29 @@ async function loadStatus() {
     if (spans[0]) spans[0].textContent = data.memories
     if (spans[1]) spans[1].textContent = data.activeProjects
     if (costEl) costEl.textContent = `$${data.todayCost.toFixed(4)}`
+
+    if (isFirst) {
+      const sysEl = document.getElementById('sys-msg')
+      if (sysEl) sysEl.textContent = `── NEO SESSION · ${data.memories} MEMORIES LOADED · z-node.cc ──`
+      addMsg(`
+        <div class="msg neo">
+          <div class="avatar neo">N</div>
+          <div class="msg-body">
+            <div class="bubble">สวัสดีครับ Jack — NEO พร้อมแล้ว 🧠<br>จำ <strong>${data.memories} memories</strong> · ${data.activeProjects} projects active<br>คุยได้เลย หรือพิมพ์ <strong style="color:var(--dalle)">สร้างภาพ...</strong> เพื่อสร้างรูปครับ</div>
+            <div class="msg-meta">
+              <span class="model-badge badge-hermes">Hermes · local</span>
+              <span class="meta-cost">$0.00</span>
+              <span class="mem-used">${data.memories} memories loaded</span>
+            </div>
+          </div>
+        </div>
+      `)
+    }
   } catch {}
 }
 
-loadStatus()
-setInterval(loadStatus, 30000)
+loadStatus(true)
+setInterval(() => loadStatus(false), 30000)
 
 // ─── SSE — Real-time Telegram activity ───
 const modelBadgeMap = {
@@ -1153,6 +2251,910 @@ function connectSSE() {
 }
 
 connectSSE()
+
+// ─── History Panel ───
+let historyOpen = false
+let histOffset = 0
+const HIST_LIMIT = 40
+let histDebTimer = null
+let histTotal = 0
+
+function toggleHistory() {
+  historyOpen = !historyOpen
+  const panel = document.getElementById('history-panel')
+  if (historyOpen) { panel.classList.add('open'); loadHistory(true) }
+  else panel.classList.remove('open')
+}
+
+function histDebounce() {
+  clearTimeout(histDebTimer)
+  histDebTimer = setTimeout(() => loadHistory(true), 350)
+}
+
+async function loadHistory(reset = false) {
+  if (reset) histOffset = 0
+  const search = document.getElementById('hist-search').value
+  const source = document.getElementById('hist-source').value
+  const date = document.getElementById('hist-date').value
+  const params = new URLSearchParams({ limit: HIST_LIMIT, offset: histOffset })
+  if (search) params.set('search', search)
+  if (source) params.set('source', source)
+  if (date)   params.set('date', date)
+
+  if (reset) document.getElementById('history-body').innerHTML =
+    '<div style="color:var(--muted);font-size:11px;font-family:\'IBM Plex Mono\',monospace;padding:20px 16px">Loading...</div>'
+
+  try {
+    const data = await fetch('/api/history?' + params).then(r => r.json())
+    histTotal = data.total
+    renderHistory(data.messages, search, reset)
+  } catch {
+    document.getElementById('history-body').innerHTML =
+      '<div style="color:#ef4444;font-size:11px;padding:16px">โหลดไม่ได้</div>'
+  }
+}
+
+function highlightSearch(text, search) {
+  if (!search) return escHtml(text)
+  const re = new RegExp(escHtml(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+  return escHtml(text).replace(re, m => `<mark>${m}</mark>`)
+}
+
+function renderHistory(messages, search, reset) {
+  const body = document.getElementById('history-body')
+  if (reset) body.innerHTML = ''
+
+  if (messages.length === 0 && reset) {
+    body.innerHTML = '<div style="color:var(--muted);font-size:11px;font-family:\'IBM Plex Mono\',monospace;padding:20px 16px">ไม่พบข้อความ</div>'
+    return
+  }
+
+  // Group by date
+  const groups = {}
+  messages.forEach(m => {
+    const d = new Date(m.created_at)
+    const key = d.toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric', weekday:'long' })
+    if (!groups[key]) groups[key] = []
+    groups[key].push(m)
+  })
+
+  let html = reset
+    ? `<div class="history-count">${histTotal} ข้อความ${search ? ` · ค้นหา "${search}"` : ''}</div>`
+    : ''
+
+  for (const [day, msgs] of Object.entries(groups)) {
+    html += `<div class="history-day-group">
+      <div class="history-day-label">${day}</div>`
+    msgs.forEach(m => {
+      const t = new Date(m.created_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
+      const srcLabel = m.source === 'telegram' ? '✈️ TG' : '🌐 Web'
+      const srcCls = m.source === 'telegram' ? 'tg' : ''
+      const cost = parseFloat(m.cost_usd) > 0 ? `$${parseFloat(m.cost_usd).toFixed(5)}` : ''
+      const content = highlightSearch(m.content.slice(0, 400) + (m.content.length > 400 ? '...' : ''), search)
+
+      // Model badge — เฉพาะ assistant
+      let modelBadgeHtml = ''
+      if (m.role === 'assistant' && m.model) {
+        const mb = modelBadge[m.model] ?? { cls: 'badge-hermes', label: m.model }
+        modelBadgeHtml = `<span class="model-badge ${mb.cls}" style="font-size:9px;padding:1px 6px">${mb.label}</span>`
+      }
+
+      html += `
+        <div class="hist-msg" onclick="this.querySelector('.hist-content').classList.toggle('expanded')">
+          <div class="hist-msg-header">
+            <span class="hist-role ${m.role}">${m.role === 'user' ? '👤 Jack' : '🤖 NEO'}</span>
+            ${modelBadgeHtml}
+            <span class="hist-source ${srcCls}">${srcLabel}</span>
+            <span class="hist-time">${t}</span>
+          </div>
+          <div class="hist-content">${content}</div>
+          ${cost ? `<div class="hist-cost">💰 ${cost}</div>` : ''}
+        </div>`
+    })
+    html += '</div>'
+  }
+
+  body.insertAdjacentHTML('beforeend', html)
+
+  // Load more button
+  const loaded = histOffset + messages.length
+  const existing = body.querySelector('.history-load-more')
+  if (existing) existing.remove()
+  if (loaded < histTotal) {
+    body.insertAdjacentHTML('beforeend', `
+      <button class="history-load-more" onclick="histLoadMore()">
+        โหลดเพิ่ม (${loaded}/${histTotal})
+      </button>`)
+  }
+}
+
+async function histLoadMore() {
+  histOffset += HIST_LIMIT
+  await loadHistory(false)
+}
+
+// ─── Usage Panel ───
+const MODEL_COLOR = {
+  'hermes': '#10b981', 'claude-haiku': '#8b5cf6', 'claude-sonnet': '#8b5cf6',
+  'claude-opus': '#8b5cf6', 'gpt-4o': '#10a37f', 'gpt-image-1': '#f472b6',
+  'gemini': '#4285f4', 'deepseek': '#ef4444',
+}
+const BILLING_LINKS = [
+  { name: 'Anthropic Console', color: '#8b5cf6', url: 'https://console.anthropic.com/settings/billing' },
+  { name: 'OpenAI Platform',   color: '#10a37f', url: 'https://platform.openai.com/usage' },
+  { name: 'DeepSeek Platform', color: '#ef4444', url: 'https://platform.deepseek.com/usage' },
+  { name: 'Google AI Studio',  color: '#4285f4', url: 'https://aistudio.google.com/app/billing' },
+]
+
+let usageOpen = false
+
+function toggleUsage() {
+  usageOpen = !usageOpen
+  const panel = document.getElementById('usage-panel')
+  if (usageOpen) { panel.classList.add('open'); loadUsage() }
+  else panel.classList.remove('open')
+}
+
+async function loadUsage() {
+  const panel = document.getElementById('usage-body')
+  panel.innerHTML = '<div style="color:var(--muted);font-size:11px;font-family:\'IBM Plex Mono\',monospace;padding:20px 0">Loading...</div>'
+  try {
+    const [data, balances] = await Promise.all([
+      fetch('/api/usage').then(r => r.json()),
+      fetch('/api/billing/balances').then(r => r.json()).catch(() => ({})),
+    ])
+    renderUsage(data, balances)
+  } catch {
+    panel.innerHTML = '<div style="color:#ef4444;font-size:11px">โหลดไม่ได้</div>'
+  }
+}
+
+function fmt(n) { return parseFloat(n || 0).toFixed(4) }
+function fmtK(n) { const v = parseInt(n || 0); return v > 999 ? (v/1000).toFixed(1)+'K' : v }
+
+function renderUsage(d, balances = {}) {
+  const maxCost = Math.max(...d.byModel.map(m => parseFloat(m.cost || 0)), 0.0001)
+
+  const periodHtml = `
+    <div class="usage-period">
+      ${[['TODAY', d.today], ['7 DAYS', d.week], ['MONTH', d.month]].map(([label, p]) => `
+        <div class="period-card">
+          <div class="period-label">${label}</div>
+          <div class="period-cost">$${fmt(p.cost)}</div>
+          <div class="period-sub">${fmtK(p.calls)} calls · ${fmtK(p.tokens)} tok</div>
+        </div>
+      `).join('')}
+    </div>`
+
+  const modelHtml = d.byModel.length === 0
+    ? '<div style="color:var(--muted);font-size:10px">ยังไม่มีข้อมูล</div>'
+    : d.byModel.map(m => {
+        const pct = (parseFloat(m.cost || 0) / maxCost * 100).toFixed(0)
+        const color = MODEL_COLOR[m.model] || 'var(--accent)'
+        return `
+          <div class="model-row">
+            <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="model-row-name">${m.model}</span>
+                <span class="model-row-calls">${fmtK(m.calls)} calls</span>
+                <span class="model-row-cost">$${fmt(m.cost)}</span>
+              </div>
+              <div class="model-bar-wrap">
+                <div class="model-bar" style="width:${pct}%;background:${color}"></div>
+              </div>
+            </div>
+          </div>`
+      }).join('')
+
+  const recentHtml = d.recent.length === 0
+    ? '<div style="color:var(--muted);font-size:10px">ยังไม่มีข้อมูล</div>'
+    : d.recent.map(r => {
+        const t = new Date(r.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'})
+        const cost = parseFloat(r.cost_usd) === 0 ? '$0' : `$${parseFloat(r.cost_usd).toFixed(5)}`
+        return `
+          <div class="recent-call">
+            <span class="recent-model">${r.model}</span>
+            <span>${r.task_type}</span>
+            <span class="recent-ms">${r.latency_ms}ms</span>
+            <span class="recent-cost">${cost}</span>
+            <span style="min-width:36px;text-align:right;color:var(--muted2)">${t}</span>
+          </div>`
+      }).join('')
+
+  // ─── Billing Balances ───
+  const providerMeta = [
+    { key: 'anthropic', name: 'Anthropic', color: '#8b5cf6', url: 'https://console.anthropic.com/settings/billing' },
+    { key: 'openai',    name: 'OpenAI',    color: '#10a37f', url: 'https://platform.openai.com/usage' },
+    { key: 'deepseek',  name: 'DeepSeek',  color: '#ef4444', url: 'https://platform.deepseek.com/usage' },
+    { key: 'google',    name: 'Google',    color: '#4285f4', url: 'https://aistudio.google.com/app/billing' },
+  ]
+
+  const balanceHtml = providerMeta.map(p => {
+    const b = balances[p.key] || {}
+    const spentMonth = parseFloat(b.spentMonth || 0)
+    const spentToday = parseFloat(b.spentToday || 0)
+    const hasBalance = b.balance !== null && b.balance !== undefined
+
+    const balancePill = hasBalance
+      ? `<span style="color:${b.balance < 1 ? '#f59e0b' : '#10b981'};font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600">$${parseFloat(b.balance).toFixed(2)} remaining</span>`
+      : `<span style="color:var(--muted2);font-family:'IBM Plex Mono',monospace;font-size:10px">ดูใน console</span>`
+
+    const todayLabel = spentToday > 0
+      ? `<span style="color:#00e5ff;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600">$${spentToday.toFixed(4)}/day</span>`
+      : `<span style="color:var(--muted2);font-size:10px;font-family:'IBM Plex Mono',monospace">$0 today</span>`
+
+    const monthLabel = spentMonth > 0
+      ? `<span style="color:var(--muted);font-size:10px;font-family:'IBM Plex Mono',monospace">$${spentMonth.toFixed(4)}/mo</span>`
+      : ''
+
+    return `
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+        <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+        <span style="font-size:11px;font-family:'IBM Plex Mono',monospace;min-width:72px">${p.name}</span>
+        ${balancePill}
+        <span style="flex:1"></span>
+        <span style="display:flex;gap:6px;align-items:center">
+          ${todayLabel}
+          ${monthLabel}
+        </span>
+        <a href="${p.url}" target="_blank" rel="noopener"
+           style="color:var(--muted);font-size:10px;font-family:'IBM Plex Mono',monospace;text-decoration:none;flex-shrink:0"
+           onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↗</a>
+      </div>`
+  }).join('')
+
+  document.getElementById('usage-body').innerHTML = `
+    ${periodHtml}
+    <div class="usage-section-title">THIS MONTH — BY MODEL</div>
+    ${modelHtml}
+    <div class="usage-section-title">RECENT CALLS</div>
+    ${recentHtml}
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">
+      <div class="usage-section-title">ACCOUNT BALANCES</div>
+      ${balanceHtml}
+    </div>`
+}
 </script>
+
+<!-- History Panel -->
+<div class="history-panel" id="history-panel">
+  <div class="history-toolbar">
+    <div class="history-top-row">
+      <span class="history-title">💬 CHAT HISTORY</span>
+      <button class="usage-close" onclick="toggleHistory()">✕</button>
+    </div>
+    <div class="history-filters">
+      <input class="history-search" id="hist-search" type="text" placeholder="🔍 ค้นหาข้อความ..." oninput="histDebounce()">
+      <select class="history-select" id="hist-source" onchange="loadHistory(true)">
+        <option value="">ทุก source</option>
+        <option value="web">🌐 Web</option>
+        <option value="telegram">✈️ Telegram</option>
+      </select>
+      <input class="history-select" id="hist-date" type="date" onchange="loadHistory(true)" title="กรองตามวันที่">
+    </div>
+  </div>
+  <div class="history-body" id="history-body">
+    <div style="color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;padding:20px 16px">Loading...</div>
+  </div>
+</div>
+
+<!-- Usage Panel -->
+<div class="usage-panel" id="usage-panel">
+  <div class="usage-header">
+    <span>📊 USAGE & BILLING</span>
+    <button class="usage-close" onclick="toggleUsage()">✕</button>
+  </div>
+  <div class="usage-body" id="usage-body"></div>
+</div>
+
+<!-- Memory Management Panel -->
+<div class="mem-panel" id="mem-panel">
+  <div class="mem-panel-header">
+    <span>🧠 MEMORY MANAGER</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span id="mem-panel-count" style="font-size:10px;color:var(--muted)"></span>
+      <button class="usage-close" onclick="toggleMemPanel()">✕</button>
+    </div>
+  </div>
+  <div class="mem-panel-filters">
+    <input class="mem-filter-input" id="mem-search" type="text" placeholder="ค้นหา memories..." oninput="debouncedLoadMem()">
+    <select class="mem-filter-select" id="mem-scope-filter" onchange="loadMemories()">
+      <option value="">All scopes</option>
+      <option value="jack">👤 Jack</option>
+      <option value="project">📂 Project</option>
+      <option value="global">🌐 Global</option>
+    </select>
+    <select class="mem-filter-select" id="mem-proj-filter" onchange="loadMemories()">
+      <option value="">All projects</option>
+      <option value="__null__">No project</option>
+    </select>
+  </div>
+  <div class="mem-list" id="mem-list">
+    <div style="color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;padding:20px;text-align:center">Loading...</div>
+  </div>
+  <div class="mem-panel-footer">
+    <span id="mem-panel-stat">-</span>
+    <button onclick="loadMemories()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:3px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer">↺ Refresh</button>
+  </div>
+</div>
+
+<!-- Import Panel -->
+<div class="import-panel" id="import-panel">
+  <div class="import-header">
+    <span>📚 LEARN FROM .MD</span>
+    <button class="usage-close" onclick="toggleImport()">✕</button>
+  </div>
+  <div class="import-body">
+    <div class="import-dropzone" id="import-dropzone"
+      onclick="document.getElementById('md-file-input').click()"
+      ondragover="importDragOver(event)" ondragleave="importDragLeave()" ondrop="importDrop(event)">
+      <div class="drop-icon">📄</div>
+      <div class="drop-title">วาง .md หรือกดเพื่อเลือกไฟล์</div>
+      <div class="drop-hint">รองรับ Markdown (.md) · สูงสุด 100KB</div>
+    </div>
+    <input type="file" id="md-file-input" accept=".md,.txt,.markdown" style="display:none" onchange="onMdFileSelect(event)">
+
+    <div class="import-file-info" id="import-file-info" style="display:none">
+      <span>📄</span>
+      <span class="import-file-name" id="import-file-name">-</span>
+      <span class="import-file-size" id="import-file-size"></span>
+      <button class="import-file-remove" onclick="clearMdFile()" title="ลบไฟล์">✕</button>
+    </div>
+
+    <div class="import-field">
+      <label>SCOPE</label>
+      <select class="import-select" id="import-scope">
+        <option value="jack">👤 Jack (ส่วนตัว)</option>
+        <option value="project">📂 Project</option>
+        <option value="global">🌐 Global</option>
+      </select>
+    </div>
+
+    <div class="import-field">
+      <label>PROJECT ID (ถ้าเลือก Project scope)</label>
+      <input class="import-input" id="import-project-id" type="text"
+        placeholder="เช่น joyride, boonma, neo, sabaidee...">
+    </div>
+
+    <div class="import-progress" id="import-progress">
+      <div class="import-progress-bar-wrap">
+        <div class="import-progress-bar"></div>
+      </div>
+      <div class="import-progress-label" id="import-progress-label">NEO กำลังอ่านและเรียนรู้...</div>
+    </div>
+
+    <button class="import-btn" id="import-btn" onclick="runPreview()" disabled>
+      🔍 Preview Memories
+    </button>
+
+    <!-- Preview box -->
+    <div class="import-preview-box" id="import-preview-box">
+      <div class="import-preview-header">
+        <span id="import-preview-title">PREVIEW</span>
+        <button onclick="clearPreview()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px">✕</button>
+      </div>
+      <div id="import-preview-list"></div>
+    </div>
+
+    <button class="import-btn" id="import-confirm-btn" onclick="runImport()" style="display:none;background:linear-gradient(135deg,var(--hermes),#059669)">
+      ✅ บันทึก memories ทั้งหมด
+    </button>
+
+    <div class="import-result" id="import-result">
+      <div class="import-result-title" id="import-result-title">✅ บันทึกแล้ว</div>
+      <div class="import-result-stat" id="import-result-stat">-</div>
+      <div class="import-result-sub" id="import-result-sub"></div>
+    </div>
+
+    <div class="import-history" id="import-history">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="import-history-title">IMPORTED FILES</div>
+        <div id="import-history-loading" style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted)"></div>
+      </div>
+      <div id="import-history-list">
+        <div style="color:var(--muted);font-size:10px;font-family:'IBM Plex Mono',monospace;padding:8px 0">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Import Panel ───
+let importOpen = false
+let mdFile = null  // { name, content, size }
+let importedFiles = []  // loaded from DB
+
+function toggleImport() {
+  importOpen = !importOpen
+  const panel = document.getElementById('import-panel')
+  if (importOpen) { panel.classList.add('open'); loadImportedFiles() }
+  else panel.classList.remove('open')
+}
+
+async function loadImportedFiles() {
+  const loading = document.getElementById('import-history-loading')
+  if (loading) loading.textContent = 'Loading...'
+  try {
+    importedFiles = await fetch('/api/import-md').then(r => r.json())
+    renderImportHistory()
+    if (loading) loading.textContent = ''
+  } catch {
+    if (loading) loading.textContent = 'โหลดไม่ได้'
+  }
+}
+
+function importDragOver(e) {
+  e.preventDefault()
+  document.getElementById('import-dropzone').classList.add('drag-over')
+}
+function importDragLeave() {
+  document.getElementById('import-dropzone').classList.remove('drag-over')
+}
+function importDrop(e) {
+  e.preventDefault()
+  document.getElementById('import-dropzone').classList.remove('drag-over')
+  const file = e.dataTransfer?.files[0]
+  if (file) loadMdFile(file)
+}
+function onMdFileSelect(e) {
+  const file = e.target.files[0]
+  if (file) loadMdFile(file)
+  e.target.value = '' // reset ให้เลือกไฟล์เดิมซ้ำได้
+}
+
+
+function loadMdFile(file) {
+  // validate จาก extension ไม่ใช่ MIME (Windows ให้ .md เป็น application/octet-stream)
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (!['md', 'txt', 'markdown'].includes(ext ?? '')) {
+    showImportResult(false, `รองรับเฉพาะ .md และ .txt (ได้รับ .${ext})`)
+    document.getElementById('import-result').style.display = 'block'
+    return
+  }
+  if (file.size > 100_000) {
+    showImportResult(false, `ไฟล์ใหญ่เกิน 100KB (${(file.size/1024).toFixed(0)}KB)`)
+    document.getElementById('import-result').style.display = 'block'
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    mdFile = { name: file.name, content: e.target.result, size: file.size }
+    document.getElementById('import-file-name').textContent = file.name
+    document.getElementById('import-file-size').textContent = (file.size / 1024).toFixed(1) + ' KB'
+    document.getElementById('import-file-info').style.display = 'flex'
+    document.getElementById('import-dropzone').style.display = 'none'
+    document.getElementById('import-btn').disabled = false
+    document.getElementById('import-result').style.display = 'none'
+  }
+  reader.onerror = () => showImportResult(false, 'อ่านไฟล์ไม่ได้')
+  reader.readAsText(file, 'utf-8')
+}
+
+function clearMdFile(hideResult = true) {
+  mdFile = null
+  document.getElementById('import-file-info').style.display = 'none'
+  document.getElementById('import-dropzone').style.display = 'block'
+  document.getElementById('import-btn').disabled = true
+  document.getElementById('md-file-input').value = ''
+  if (hideResult) document.getElementById('import-result').style.display = 'none'
+}
+
+async function runImport() {
+  if (!mdFile) return
+  const scope = document.getElementById('import-scope').value
+  const projectId = document.getElementById('import-project-id').value.trim() || undefined
+  const btn = document.getElementById('import-btn')
+  const progress = document.getElementById('import-progress')
+  const result = document.getElementById('import-result')
+
+  btn.disabled = true
+  progress.style.display = 'block'
+  result.style.display = 'none'
+  document.getElementById('import-progress-label').textContent =
+    `กำลังวิเคราะห์ ${mdFile.name} ด้วย Claude Haiku...`
+
+  try {
+    const res = await fetch('/api/import-md', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: mdFile.name,
+        content: mdFile.content,
+        scope,
+        projectId,
+      }),
+    })
+    progress.style.display = 'none'
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      showImportResult(false, err.error || 'เกิดข้อผิดพลาด')
+      btn.disabled = false
+      return
+    }
+
+    const data = await res.json()
+    showImportResult(true, null, data)
+    loadImportedFiles()  // reload list จาก DB
+    loadStatus()
+  } catch (e) {
+    progress.style.display = 'none'
+    showImportResult(false, 'เชื่อมต่อ server ไม่ได้')
+    btn.disabled = false
+  }
+}
+
+function showImportResult(ok, errMsg, data) {
+  const el = document.getElementById('import-result')
+  const btn = document.getElementById('import-btn')
+  el.style.display = 'block'
+  el.className = ok ? 'import-result' : 'import-result error'
+
+  if (ok) {
+    document.getElementById('import-result-title').textContent = '✅ บันทึก memories แล้ว'
+    document.getElementById('import-result-stat').textContent = `${data.saved} memories`
+    document.getElementById('import-result-sub').textContent =
+      `จาก ${data.total} ที่ดึงได้ · ${data.chunks} chunks · ไฟล์: ${data.filename}`
+    clearMdFile(false)  // ← ไม่ซ่อน result
+    btn.disabled = false
+    btn.textContent = '🧠 เรียนรู้จากไฟล์นี้'
+    btn.onclick = runImport
+  } else {
+    document.getElementById('import-result-title').textContent = '❌ เกิดข้อผิดพลาด'
+    document.getElementById('import-result-stat').textContent = errMsg
+    document.getElementById('import-result-sub').textContent = ''
+    btn.disabled = false
+  }
+}
+
+function renderImportHistory() {
+  const list = document.getElementById('import-history-list')
+  if (!list) return
+
+  if (importedFiles.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:10px;font-family:\'IBM Plex Mono\',monospace;padding:8px 0">ยังไม่มีไฟล์ที่ import</div>'
+    return
+  }
+
+  list.innerHTML = importedFiles.map((entry, i) => {
+    const d = new Date(entry.importedAt)
+    const dateStr = d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })
+    const timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+    const proj = entry.projectId
+      ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);color:var(--accent);font-family:'IBM Plex Mono',monospace;flex-shrink:0">${escHtml(entry.projectId)}</span>`
+      : `<span style="font-size:9px;color:var(--muted2);font-family:'IBM Plex Mono',monospace;flex-shrink:0">–</span>`
+
+    return `
+      <div class="import-history-item" id="hist-item-${i}" style="flex-direction:column;align-items:stretch;gap:0;padding:8px 0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px">📄</span>
+          <span class="import-history-name" title="${escHtml(entry.filename)}">${escHtml(entry.filename)}</span>
+          ${proj}
+          <span class="import-history-count" id="hist-count-${i}">${entry.memoryCount} mem</span>
+          <button class="import-history-del" id="hist-del-${i}"
+            title="ลบ memories จากไฟล์นี้"
+            onclick="showDeleteConfirm(${i})">🗑</button>
+        </div>
+        <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted2);padding-left:17px;margin-top:2px">
+          ${dateStr} · ${timeStr}
+        </div>
+        <div class="import-confirm" id="hist-confirm-${i}">
+          <div class="import-confirm-msg">
+            ลบ <strong>${entry.memoryCount} memories</strong> จาก "<strong>${escHtml(entry.filename)}</strong>"
+            ${entry.projectId ? `(project: <strong>${escHtml(entry.projectId)}</strong>)` : ''} ออกจาก NEO?<br>
+            <span style="color:var(--muted);font-size:10px">ข้อมูลที่ NEO จำได้จากไฟล์นี้จะหายไป</span>
+          </div>
+          <div class="import-confirm-btns">
+            <button class="import-confirm-yes" id="hist-yes-${i}" onclick="confirmDelete(${i},'${entry.filename.replace(/'/g,"\\'")}')">🗑 ลบ ${entry.memoryCount} memories</button>
+            <button class="import-confirm-no" onclick="cancelDelete(${i})">ยกเลิก</button>
+          </div>
+        </div>
+      </div>`
+  }).join('<div style="border-bottom:1px solid var(--border)"></div>')
+}
+
+function showDeleteConfirm(i) {
+  // ปิด confirm อื่นก่อน
+  document.querySelectorAll('.import-confirm.show').forEach(el => el.classList.remove('show'))
+  document.getElementById(`hist-confirm-${i}`)?.classList.add('show')
+  document.getElementById(`hist-del-${i}`)?.setAttribute('disabled', 'true')
+}
+
+function cancelDelete(i) {
+  document.getElementById(`hist-confirm-${i}`)?.classList.remove('show')
+  const btn = document.getElementById(`hist-del-${i}`)
+  if (btn) btn.removeAttribute('disabled')
+}
+
+async function confirmDelete(i, filename) {
+  const yesBtn = document.getElementById(`hist-yes-${i}`)
+  const countEl = document.getElementById(`hist-count-${i}`)
+  if (yesBtn) { yesBtn.disabled = true; yesBtn.textContent = 'กำลังลบ...' }
+
+  try {
+    const res = await fetch('/api/import-md', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename }),
+    })
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'error')
+    const data = await res.json()
+
+    // อัพเดต UI inline แทนที่จะ re-render ทั้งหมด
+    if (countEl) countEl.innerHTML = '<s style="color:var(--muted)">ลบแล้ว</s>'
+    document.getElementById(`hist-confirm-${i}`)?.classList.remove('show')
+    const delBtn = document.getElementById(`hist-del-${i}`)
+    if (delBtn) { delBtn.style.display = 'none' }
+
+    // ลบออกจาก array
+    importedFiles.splice(i, 1)
+    loadStatus()
+  } catch (e) {
+    if (yesBtn) { yesBtn.disabled = false; yesBtn.textContent = 'ลบใหม่' }
+    const confirm = document.getElementById(`hist-confirm-${i}`)
+    if (confirm) confirm.insertAdjacentHTML('beforeend',
+      `<div style="color:#ef4444;font-size:10px;font-family:'IBM Plex Mono',monospace;margin-top:6px">❌ ${escHtml(e.message)}</div>`)
+  }
+}
+</script>
+
+<script>
+// ─── Import Preview ───
+let previewMemories = []
+
+async function runPreview() {
+  if (!mdFile) return
+  const scope = document.getElementById('import-scope').value
+  const projectId = document.getElementById('import-project-id').value.trim() || undefined
+  const btn = document.getElementById('import-btn')
+  const progress = document.getElementById('import-progress')
+
+  btn.disabled = true
+  progress.style.display = 'block'
+  document.getElementById('import-progress-label').textContent = `กำลัง preview ${mdFile.name}...`
+  clearPreview()
+
+  try {
+    const res = await fetch('/api/import-md/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: mdFile.name, content: mdFile.content, scope, projectId }),
+    })
+    progress.style.display = 'none'
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      showImportResult(false, err.error || 'Preview failed')
+      btn.disabled = false
+      return
+    }
+
+    const data = await res.json()
+    previewMemories = data.memories
+    renderPreview(data)
+    btn.disabled = false
+  } catch (e) {
+    progress.style.display = 'none'
+    showImportResult(false, 'เชื่อมต่อ server ไม่ได้')
+    btn.disabled = false
+  }
+}
+
+function renderPreview(data) {
+  const box = document.getElementById('import-preview-box')
+  const list = document.getElementById('import-preview-list')
+  const title = document.getElementById('import-preview-title')
+  const confirmBtn = document.getElementById('import-confirm-btn')
+
+  title.textContent = `PREVIEW — ${data.total} memories จาก ${data.filename}`
+  list.innerHTML = data.memories.map(m => {
+    const scopeColor = m.scope === 'jack' ? 'var(--accent)' : m.scope === 'project' ? '#a78bfa' : '#fb923c'
+    const impColor = m.importance >= 8 ? '#ef4444' : m.importance >= 6 ? 'var(--gold)' : 'var(--muted)'
+    return `<div class="import-preview-item">
+      <div class="import-preview-meta">
+        <span class="mem-badge" style="background:rgba(255,255,255,0.05);color:${scopeColor}">${m.scope}</span>
+        <span class="mem-badge cat">${m.category}</span>
+        ${m.projectId ? `<span class="mem-badge proj">${escHtml(m.projectId)}</span>` : ''}
+        <span style="margin-left:auto;font-size:9px;font-family:'IBM Plex Mono',monospace;color:${impColor}">★${m.importance}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text);line-height:1.4">${escHtml(m.content)}</div>
+    </div>`
+  }).join('')
+
+  box.classList.add('show')
+  if (data.total > 0) {
+    confirmBtn.style.display = 'block'
+    confirmBtn.textContent = `✅ บันทึก ${data.total} memories`
+  }
+}
+
+function clearPreview() {
+  previewMemories = []
+  document.getElementById('import-preview-box').classList.remove('show')
+  document.getElementById('import-preview-list').innerHTML = ''
+  document.getElementById('import-confirm-btn').style.display = 'none'
+}
+</script>
+
+<script>
+// ─── Memory Management Panel ───
+let memPanelOpen = false
+let memOffset = 0
+const MEM_LIMIT = 25
+let memDebounceTimer = null
+
+function toggleMemPanel() {
+  memPanelOpen = !memPanelOpen
+  const panel = document.getElementById('mem-panel')
+  if (memPanelOpen) {
+    panel.classList.add('open')
+    loadMemProjects()
+    loadMemories()
+  } else {
+    panel.classList.remove('open')
+  }
+}
+
+async function loadMemProjects() {
+  try {
+    const res = await fetch('/api/status')
+    const data = await res.json()
+    // also fetch distinct projects from memories
+    const projRes = await fetch('/api/memories-manage?limit=0')
+    const projData = await projRes.json()
+  } catch {}
+  // Fetch distinct project IDs from memories
+  try {
+    const res = await fetch('/api/memories-manage?limit=200')
+    const data = await res.json()
+    const projects = [...new Set(data.memories.filter(m => m.project_id).map(m => m.project_id))].sort()
+    const sel = document.getElementById('mem-proj-filter')
+    const existing = [...sel.options].map(o => o.value)
+    projects.forEach(pid => {
+      if (!existing.includes(pid)) {
+        const opt = document.createElement('option')
+        opt.value = pid
+        opt.textContent = pid
+        sel.appendChild(opt)
+      }
+    })
+  } catch {}
+}
+
+function debouncedLoadMem() {
+  clearTimeout(memDebounceTimer)
+  memDebounceTimer = setTimeout(() => { memOffset = 0; loadMemories() }, 350)
+}
+
+async function loadMemories(appendMode = false) {
+  if (!appendMode) memOffset = 0
+  const search = document.getElementById('mem-search')?.value.trim() || ''
+  const scope = document.getElementById('mem-scope-filter')?.value || ''
+  const projectId = document.getElementById('mem-proj-filter')?.value || ''
+
+  const params = new URLSearchParams({ search, scope, projectId, limit: MEM_LIMIT, offset: memOffset })
+  const list = document.getElementById('mem-list')
+  if (!appendMode) list.innerHTML = '<div style="color:var(--muted);font-size:11px;font-family:\'IBM Plex Mono\',monospace;padding:20px;text-align:center">Loading...</div>'
+
+  try {
+    const res = await fetch('/api/memories-manage?' + params)
+    const data = await res.json()
+
+    document.getElementById('mem-panel-count').textContent = `${data.total} total`
+    document.getElementById('mem-panel-stat').textContent =
+      `แสดง ${memOffset + 1}–${Math.min(memOffset + data.memories.length, data.total)} จาก ${data.total}`
+
+    if (!appendMode) list.innerHTML = ''
+    if (data.memories.length === 0 && !appendMode) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:11px;font-family:\'IBM Plex Mono\',monospace;padding:20px;text-align:center">ไม่พบ memories</div>'
+      return
+    }
+
+    data.memories.forEach(m => list.insertAdjacentHTML('beforeend', renderMemItem(m)))
+
+    // Load more button
+    const loadMoreId = 'mem-load-more'
+    document.getElementById(loadMoreId)?.remove()
+    if (data.offset + data.memories.length < data.total) {
+      list.insertAdjacentHTML('beforeend', `
+        <button id="${loadMoreId}" onclick="loadMoreMem()" style="width:100%;padding:8px;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;margin-top:4px">
+          Load more (${data.total - data.offset - data.memories.length} remaining)
+        </button>`)
+    }
+  } catch (e) {
+    list.innerHTML = `<div style="color:#ef4444;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:20px;text-align:center">โหลดไม่ได้: ${e.message}</div>`
+  }
+}
+
+function loadMoreMem() {
+  memOffset += MEM_LIMIT
+  loadMemories(true)
+}
+
+function renderMemItem(m) {
+  const scopeClass = `scope-${m.scope}`
+  const proj = m.project_id ? `<span class="mem-badge proj">${escHtml(m.project_id)}</span>` : ''
+  const impColor = m.importance >= 8 ? '#ef4444' : m.importance >= 6 ? 'var(--gold)' : 'var(--muted)'
+  const d = new Date(m.created_at)
+  const dateStr = d.toLocaleDateString('th-TH', { day:'2-digit', month:'short', year:'2-digit' })
+  const sourceLabel = m.source?.startsWith('import:') ? 'import' : (m.source || 'manual')
+  const safeId = CSS.escape(m.id)
+
+  return `<div class="mem-item" id="mem-item-${m.id}">
+    <div class="mem-item-top">
+      <span class="mem-badge ${scopeClass}">${m.scope}</span>
+      <span class="mem-badge cat">${m.category}</span>
+      ${proj}
+      <span class="mem-importance" style="color:${impColor}">★${m.importance}</span>
+    </div>
+    <div class="mem-content" id="mem-content-${m.id}">${escHtml(m.content)}</div>
+    <div class="mem-source">${sourceLabel} · ${dateStr}</div>
+    <div class="mem-item-actions">
+      <button class="mem-action-btn" onclick="startEditMem('${m.id}')">✏ แก้ไข</button>
+      <button class="mem-action-btn danger" onclick="deleteMem('${m.id}')">🗑 ลบ</button>
+    </div>
+  </div>`
+}
+
+function startEditMem(id) {
+  const contentEl = document.getElementById(`mem-content-${id}`)
+  const currentText = contentEl.textContent
+  contentEl.innerHTML = `
+    <textarea class="mem-content-edit" id="mem-edit-${id}">${escHtml(currentText)}</textarea>
+    <div style="display:flex;gap:4px;margin-top:4px">
+      <button class="mem-action-btn save-btn" onclick="saveMem('${id}')">✓ Save</button>
+      <button class="mem-action-btn" onclick="cancelEditMem('${id}','${escHtml(currentText).replace(/'/g, "\\'")}')">✕ Cancel</button>
+    </div>`
+  document.getElementById(`mem-edit-${id}`)?.focus()
+}
+
+function cancelEditMem(id, original) {
+  const contentEl = document.getElementById(`mem-content-${id}`)
+  contentEl.innerHTML = escHtml(original)
+}
+
+async function saveMem(id) {
+  const textarea = document.getElementById(`mem-edit-${id}`)
+  const newContent = textarea?.value.trim()
+  if (!newContent) return
+
+  try {
+    const res = await fetch(`/api/memories/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: newContent }),
+    })
+    if (!res.ok) throw new Error((await res.json()).error)
+    document.getElementById(`mem-content-${id}`).innerHTML = escHtml(newContent)
+  } catch (e) {
+    alert('บันทึกไม่ได้: ' + e.message)
+  }
+}
+
+async function deleteMem(id) {
+  if (!confirm('ลบ memory นี้?')) return
+  try {
+    const res = await fetch(`/api/memories/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error((await res.json()).error)
+    document.getElementById(`mem-item-${id}`)?.remove()
+    loadStatus()
+  } catch (e) {
+    alert('ลบไม่ได้: ' + e.message)
+  }
+}
+</script>
+
+<script>
+// ─── TTS Voice Selector ───
+let ttsVoiceMode = 'female'  // 'female' | 'male'
+
+function onVoiceChange(el) {
+  ttsVoiceMode = el.value
+}
+
+</script>
+
 </body>
 </html>
