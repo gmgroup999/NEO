@@ -1,5 +1,5 @@
 import { callHermes } from '../ai/hermes'
-import { callClaude } from '../ai/claude'
+import { callClaude, ConversationTurn } from '../ai/claude'
 import { callOpenAI } from '../ai/openai'
 import { callGemini } from '../ai/gemini'
 import { callDeepSeek } from '../ai/deepseek'
@@ -14,6 +14,9 @@ export interface RouteRequest {
   sessionId: string
   forcedModel?: AIModel
   taskHint?: TaskType
+  history?: ConversationTurn[]
+  imageBase64?: string
+  imageMime?: string
 }
 
 export interface RouteResponse {
@@ -29,57 +32,90 @@ export interface RouteResponse {
 function classifyTask(message: string): { type: TaskType; complexity: 'low' | 'medium' | 'high' } {
   const msg = message.toLowerCase()
 
-  if (msg.includes('ภาพ') || msg.includes('รูป') || msg.includes('image') || msg.includes('screenshot')) {
+  // Vision — GPT-4o เท่านั้น (ไม่รวม trigger สร้างภาพ ซึ่ง handle แยก)
+  if (msg.includes('screenshot') || msg.includes('photo') || msg.includes('ดูรูป') ||
+      (msg.includes('วิเคราะห์') && (msg.includes('ภาพ') || msg.includes('รูป')))) {
     return { type: 'vision', complexity: 'medium' }
   }
-  if (msg.includes('คำนวณ') || msg.includes('สมการ') || msg.includes('math') || msg.includes('formula')) {
-    return { type: 'math', complexity: 'medium' }
+
+  // Bulk / ยาวมาก — Gemini (context window ใหญ่สุด)
+  if (message.length > 5000) {
+    return { type: 'bulk', complexity: 'high' }
   }
-  if (msg.includes('แปล') || msg.includes('translate') || msg.includes('translation')) {
-    return { type: 'translation', complexity: 'low' }
-  }
+
+  // Code — Claude Sonnet (แม่นยำสุดสำหรับ code)
   if (
     msg.includes('โค้ด') || msg.includes('code') || msg.includes('debug') ||
-    msg.includes('function') || msg.includes('bug') || msg.includes('error') ||
-    msg.includes('typescript') || msg.includes('sql') || msg.includes('api')
+    msg.includes('bug') || msg.includes('error') || msg.includes('typescript') ||
+    msg.includes('javascript') || msg.includes('python') || msg.includes('sql') ||
+    msg.includes('supabase') || msg.includes('react') || msg.includes('deploy') ||
+    msg.includes('dockerfile') || msg.includes('function') || msg.includes('refactor') ||
+    msg.includes('implement') || msg.includes('เขียนโค้ด') || msg.includes('แก้โค้ด')
   ) {
     return { type: 'code', complexity: 'high' }
   }
+
+  // Math / คำนวณ — DeepSeek (reasoning + ถูกสุด)
+  if (
+    msg.includes('คำนวณ') || msg.includes('สมการ') || msg.includes('math') ||
+    msg.includes('formula') || msg.includes('เปอร์เซ็นต์') || msg.includes('%') ||
+    msg.includes('กำไร') || msg.includes('ขาดทุน') || msg.includes('ดอกเบี้ย') ||
+    msg.includes('ต้นทุน') || msg.includes('roi') || msg.includes('calculate') ||
+    /\d+\s*[+\-*/×÷]\s*\d+/.test(msg)
+  ) {
+    return { type: 'math', complexity: 'medium' }
+  }
+
+  // Analysis / วางแผน / เปรียบเทียบ — DeepSeek (reasoning ดี ราคาถูก)
   if (
     msg.includes('วางแผน') || msg.includes('strategy') || msg.includes('วิเคราะห์') ||
-    msg.includes('analyse') || msg.includes('เปรียบเทียบ') || msg.includes('แนะนำ')
+    msg.includes('analyse') || msg.includes('analyze') || msg.includes('เปรียบเทียบ') ||
+    msg.includes('ข้อดี') || msg.includes('ข้อเสีย') || msg.includes('pros') ||
+    msg.includes('cons') || msg.includes('ทำไม') || msg.includes('เหตุผล') ||
+    msg.includes('recommend') || msg.includes('suggest') || msg.includes('แนะนำ') ||
+    msg.includes('ควรจะ') || msg.includes('คิดว่า') || msg.includes('รีวิว')
   ) {
-    return { type: 'analysis', complexity: 'high' }
-  }
-  if (
-    msg.includes('เขียน') || msg.includes('draft') || msg.includes('content') ||
-    msg.includes('script') || msg.includes('caption') || msg.includes('โฆษณา')
-  ) {
-    return { type: 'creative', complexity: message.length > 200 ? 'high' : 'medium' }
-  }
-  if (message.length > 5000) {
     return { type: 'analysis', complexity: 'high' }
   }
 
-  return { type: 'chat', complexity: 'low' }
+  // Creative / เขียน content — Claude Haiku (ภาษาสวย เร็ว)
+  if (
+    msg.includes('เขียน') || msg.includes('draft') || msg.includes('content') ||
+    msg.includes('caption') || msg.includes('โฆษณา') || msg.includes('บทความ') ||
+    msg.includes('สคริปต์') || msg.includes('script') || msg.includes('ประกาศ') ||
+    msg.includes('email') || msg.includes('อีเมล')
+  ) {
+    return { type: 'creative', complexity: message.length > 300 ? 'high' : 'medium' }
+  }
+
+  // Translation — Claude Haiku (แม่นยำ ภาษาเป็นธรรมชาติ)
+  if (msg.includes('แปล') || msg.includes('translate') || msg.includes('translation')) {
+    return { type: 'translation', complexity: 'low' }
+  }
+
+  // Simple greeting / สั้นมาก — Hermes (ฟรี)
+  if (message.trim().length < 30) {
+    return { type: 'chat', complexity: 'low' }
+  }
+
+  return { type: 'chat', complexity: 'medium' }
 }
 
 // ─── AUTO ROUTER ───
+// Priority: ความเชี่ยวชาญ > ราคา > ความเร็ว
+// Default: DeepSeek — ถูก + reasoning ดี เหมาะงานทั่วไปของ Jack
 function autoSelectModel(message: string): AIModel {
   const { type, complexity } = classifyTask(message)
 
-  if (type === 'translation') return 'claude-haiku'
-  if (type === 'chat' && complexity === 'low') return 'claude-haiku'
-  if (type === 'bulk') return 'claude-haiku'
-  if (type === 'vision') return 'gpt-4o'
-  if (type === 'math') return 'deepseek'
-  if (message.length > 5000) return 'gemini'
-  if (type === 'code') return 'claude-sonnet'
-  if (type === 'analysis') return 'claude-sonnet'
+  if (type === 'vision')     return 'gpt-4o'       // เดียวที่ดู image ได้
+  if (type === 'bulk')       return 'gemini'        // context ยาวสุด
+  if (type === 'code')       return 'claude-sonnet' // แม่นยำ code สุด
+  if (type === 'math')       return 'deepseek'      // reasoning + ถูกสุด
+  if (type === 'analysis')   return 'deepseek'      // reasoning ดี ราคาถูก
+  if (type === 'translation') return 'claude-haiku' // ภาษาเป็นธรรมชาติ
   if (type === 'creative' && complexity === 'high') return 'claude-sonnet'
-  if (type === 'creative' && complexity === 'medium') return 'claude-haiku'
-
-  return 'hermes'
+  if (type === 'creative')   return 'claude-haiku'  // เร็ว สวย
+  return 'deepseek' // DEFAULT — ถูก + ฉลาด (Hermes ใช้ @hermes เท่านั้น)
 }
 
 // ─── FUZZY HELPERS ───
@@ -99,6 +135,7 @@ function levenshtein(a: string, b: string): number {
 export function parseMention(message: string): { model: AIModel | null; cleanMessage: string } {
   const mentionMap: Record<string, AIModel> = {
     '@hermes': 'hermes',
+    '@qwen': 'hermes',
     '@claude': 'claude-sonnet',
     '@opus': 'claude-opus',
     '@haiku': 'claude-haiku',
@@ -150,35 +187,36 @@ function estimateCost(model: AIModel, promptTokens: number, completionTokens: nu
 // ─── MAIN ROUTER ───
 export async function routeAndCall(req: RouteRequest): Promise<RouteResponse> {
   const start = Date.now()
-  const model = req.forcedModel ?? autoSelectModel(req.message)
+  // ถ้ามีรูปภาพ → บังคับใช้ GPT-4o เสมอ
+  const model = req.imageBase64 ? 'gpt-4o' : (req.forcedModel ?? autoSelectModel(req.message))
   const routedBy = req.forcedModel ? 'manual' : 'auto'
 
   let result: { content: string; promptTokens: number; completionTokens: number }
 
   switch (model) {
     case 'hermes':
-      result = await callHermes(req.message, req.systemPrompt)
+      result = await callHermes(req.message, req.systemPrompt, req.history)
       break
     case 'claude-haiku':
-      result = await callClaude(req.message, req.systemPrompt, 'claude-haiku-4-5')
+      result = await callClaude(req.message, req.systemPrompt, 'claude-haiku-4-5', req.history)
       break
     case 'claude-sonnet':
-      result = await callClaude(req.message, req.systemPrompt, 'claude-sonnet-4-5')
+      result = await callClaude(req.message, req.systemPrompt, 'claude-sonnet-4-5', req.history)
       break
     case 'claude-opus':
-      result = await callClaude(req.message, req.systemPrompt, 'claude-opus-4-5')
+      result = await callClaude(req.message, req.systemPrompt, 'claude-opus-4-5', req.history)
       break
     case 'gpt-4o':
-      result = await callOpenAI(req.message, req.systemPrompt)
+      result = await callOpenAI(req.message, req.systemPrompt, req.imageBase64, req.imageMime, req.history)
       break
     case 'gemini':
-      result = await callGemini(req.message, req.systemPrompt)
+      result = await callGemini(req.message, req.systemPrompt, req.history)
       break
     case 'deepseek':
-      result = await callDeepSeek(req.message, req.systemPrompt)
+      result = await callDeepSeek(req.message, req.systemPrompt, req.history)
       break
     default:
-      result = await callHermes(req.message, req.systemPrompt)
+      result = await callHermes(req.message, req.systemPrompt, req.history)
   }
 
   const latencyMs = Date.now() - start
@@ -225,5 +263,14 @@ export function formatCostDisplay(res: RouteResponse): string {
   const emoji = modelEmoji[res.model]
   const modeTag = res.routedBy === 'manual' ? '· manual' : ''
 
-  return `\n─────────────────\n${emoji} ${res.model} ${modeTag}\n💰 ${costDisplay} · ⚡ ${res.latencyMs}ms`
+  const displayName: Record<AIModel, string> = {
+    'hermes': 'qwen2.5:3b',
+    'claude-haiku': 'claude-haiku',
+    'claude-sonnet': 'claude-sonnet',
+    'claude-opus': 'claude-opus',
+    'gpt-4o': 'gpt-4o',
+    'gemini': 'gemini',
+    'deepseek': 'deepseek',
+  }
+  return `\n─────────────────\n${emoji} ${displayName[res.model]} ${modeTag}\n💰 ${costDisplay} · ⚡ ${res.latencyMs}ms`
 }

@@ -1580,7 +1580,7 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
   <div class="fleet-list">
     <div class="fleet-item">
       <div class="fleet-dot" style="background:var(--hermes)"></div>
-      <div class="fleet-name" style="color:var(--hermes)">Hermes 4</div>
+      <div class="fleet-name" style="color:var(--hermes)">Qwen 2.5</div>
       <div class="fleet-tag">local·$0</div>
     </div>
     <div class="fleet-item">
@@ -1668,7 +1668,7 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
   <!-- Input zone -->
   <div class="input-zone">
     <div class="quick-actions">
-      <div class="qa-btn" onclick="insertText('@hermes ')">@hermes</div>
+      <div class="qa-btn" onclick="insertText('@qwen ')">@qwen</div>
       <div class="qa-btn" onclick="insertText('@claude ')">@claude</div>
       <div class="qa-btn" onclick="insertText('@gpt ')">@gpt</div>
       <div class="qa-btn" onclick="insertText('@gemini ')">@gemini</div>
@@ -1718,7 +1718,7 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
           <span>🐇</span>
           <span class="tts-speed-val" id="tts-speed-val">1×</span>
         </div>
-        <div class="model-hint"><div class="dot" style="background:var(--hermes)"></div>Hermes</div>
+        <div class="model-hint"><div class="dot" style="background:var(--hermes)"></div>Qwen 2.5</div>
         <div class="model-hint"><div class="dot" style="background:var(--claude)"></div>Claude</div>
         <div class="model-hint" style="color:var(--muted)">auto-routed</div>
       </div>
@@ -1949,7 +1949,7 @@ async function speak(text, btnEl) {
 speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices()
 
 const modelBadge = {
-  'hermes':        { cls: 'badge-hermes',   label: 'Hermes 4 · local' },
+  'hermes':        { cls: 'badge-hermes',   label: 'Qwen 2.5 · local' },
   'claude-haiku':  { cls: 'badge-claude',   label: 'Claude Haiku · api' },
   'claude-sonnet': { cls: 'badge-claude',   label: 'Claude Sonnet · api' },
   'claude-opus':   { cls: 'badge-claude',   label: 'Claude Opus · api' },
@@ -2164,7 +2164,7 @@ async function loadStatus(isFirst = false) {
           <div class="msg-body">
             <div class="bubble">สวัสดีครับ Jack — NEO พร้อมแล้ว 🧠<br>จำ <strong>${data.memories} memories</strong> · ${data.activeProjects} projects active<br>คุยได้เลย หรือพิมพ์ <strong style="color:var(--dalle)">สร้างภาพ...</strong> เพื่อสร้างรูปครับ</div>
             <div class="msg-meta">
-              <span class="model-badge badge-hermes">Hermes · local</span>
+              <span class="model-badge badge-hermes">Qwen 2.5 · local</span>
               <span class="meta-cost">$0.00</span>
               <span class="mem-used">${data.memories} memories loaded</span>
             </div>
@@ -2180,7 +2180,7 @@ setInterval(() => loadStatus(false), 30000)
 
 // ─── SSE — Real-time Telegram activity ───
 const modelBadgeMap = {
-  'hermes': { cls: 'badge-hermes', short: '🟢 Hermes' },
+  'hermes': { cls: 'badge-hermes', short: '🟢 Qwen 2.5' },
   'claude-haiku': { cls: 'badge-claude', short: '🟣 Haiku' },
   'claude-sonnet': { cls: 'badge-claude', short: '🟣 Sonnet' },
   'claude-opus': { cls: 'badge-claude', short: '🟣 Opus' },
