@@ -599,6 +599,36 @@ app.delete('/api/import-md', async (req, reply) => {
   return { deleted: result.rowCount, filename }
 })
 
+// ─── System Health API ───
+app.get('/api/health', async () => {
+  const { collectHealth } = await import('./health')
+  return collectHealth()
+})
+
+app.post('/api/health/analyze', async (req) => {
+  const { issues, containers, system } = req.body as any
+  if (!issues?.length) return { fixes: [] }
+
+  const { callDeepSeek } = await import('../ai/deepseek')
+  const issueText = issues.map((i: any, n: number) => `${n + 1}. [${i.severity.toUpperCase()}] ${i.component}: ${i.message}`).join('\n')
+  const crashedContainers = (containers ?? []).filter((c: any) => c.state !== 'running').map((c: any) => `- ${c.name}: ${c.status}`).join('\n')
+
+  const prompt = `NEO Personal AI Server มีปัญหาดังนี้:
+
+${issueText}
+${crashedContainers ? `\nContainers ที่หยุดทำงาน:\n${crashedContainers}` : ''}
+
+System: CPU ${system?.cpu?.usagePct}%, RAM ${system?.ram?.usedPct}%, Disk ${system?.disk?.usedPct}%
+
+วิเคราะห์แต่ละปัญหาและให้วิธีแก้เป็นข้อๆ ชัดเจน พร้อม command ที่ใช้ได้จริงบน Linux/Docker
+ตอบภาษาไทย แต่ command เป็นภาษาอังกฤษ`
+
+  const { content } = await callDeepSeek(prompt,
+    'คุณเป็นผู้เชี่ยวชาญ DevOps และ Linux สำหรับ personal server ให้คำแนะนำที่ชัดเจนและปฏิบัติได้จริง'
+  )
+  return { fixes: content }
+})
+
 // ─── Cron Logs API ───
 app.get('/api/cron/logs', async () => {
   const [logs, summary] = await Promise.all([

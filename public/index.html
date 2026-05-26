@@ -1646,6 +1646,7 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
       <button onclick="toggleImport()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📚 Learn</button>
       <button onclick="toggleMemPanel()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">🧠 Memories</button>
       <button onclick="toggleReports()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📊 Reports</button>
+      <button onclick="toggleSystem()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">🖥️ System</button>
     </div>
   </div>
 
@@ -2580,6 +2581,17 @@ function renderUsage(d, balances = {}) {
   </div>
 </div>
 
+<!-- System Health Panel -->
+<div class="usage-panel" id="system-panel">
+  <div class="usage-header">
+    <span>🖥️ SYSTEM HEALTH</span>
+    <button class="usage-close" onclick="toggleSystem()">✕</button>
+  </div>
+  <div class="usage-body" id="system-body">
+    <div style="color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;padding:20px 0">Loading...</div>
+  </div>
+</div>
+
 <!-- Reports Panel -->
 <div class="usage-panel" id="reports-panel">
   <div class="usage-header">
@@ -3252,6 +3264,150 @@ function renderReports(logs, lastRuns) {
     ${jobCards}
     <div class="usage-section-title" style="margin-top:6px">RECENT ACTIVITY</div>
     ${recentHtml}`
+}
+</script>
+
+<script>
+// ─── System Health Panel ───
+let systemOpen = false
+let systemTimer = null
+let lastHealthData = null
+
+function toggleSystem() {
+  systemOpen = !systemOpen
+  const panel = document.getElementById('system-panel')
+  if (systemOpen) {
+    panel.classList.add('open')
+    loadSystem()
+    systemTimer = setInterval(loadSystem, 30000)
+  } else {
+    panel.classList.remove('open')
+    clearInterval(systemTimer)
+  }
+}
+
+async function loadSystem() {
+  const body = document.getElementById('system-body')
+  try {
+    const data = await fetch('/api/health').then(r => r.json())
+    lastHealthData = data
+    body.innerHTML = renderSystem(data)
+  } catch (e) {
+    body.innerHTML = '<div style="color:#ef4444;font-size:11px">โหลดไม่ได้</div>'
+  }
+}
+
+async function analyzeIssues() {
+  if (!lastHealthData?.issues?.length) return
+  const btn = document.getElementById('analyze-btn')
+  btn.textContent = '⏳ กำลังวิเคราะห์...'
+  btn.disabled = true
+  try {
+    const res = await fetch('/api/health/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lastHealthData),
+    }).then(r => r.json())
+    document.getElementById('fixes-box').innerHTML =
+      `<div style="white-space:pre-wrap;font-size:11px;line-height:1.7;color:var(--text)">${res.fixes}</div>`
+  } catch {
+    document.getElementById('fixes-box').innerHTML = '<div style="color:#ef4444;font-size:11px">วิเคราะห์ไม่ได้</div>'
+  }
+  btn.textContent = '🤖 AI แนะนำวิธีแก้'
+  btn.disabled = false
+}
+
+function renderSystem(d) {
+  const overallColor = d.overall === 'healthy' ? '#10b981' : d.overall === 'degraded' ? '#f59e0b' : '#ef4444'
+  const overallIcon  = d.overall === 'healthy' ? '✅' : d.overall === 'degraded' ? '⚠️' : '🚨'
+  const overallLabel = d.overall === 'healthy' ? 'ทำงานปกติ' : d.overall === 'degraded' ? 'มีคำเตือน' : 'วิกฤต'
+
+  function bar(pct, warn = 70, crit = 90) {
+    const color = pct >= crit ? '#ef4444' : pct >= warn ? '#f59e0b' : '#10b981'
+    return `<div style="background:var(--s3);border-radius:3px;height:6px;width:100%;margin-top:3px">
+      <div style="background:${color};width:${Math.min(pct,100)}%;height:6px;border-radius:3px;transition:width 0.3s"></div></div>`
+  }
+
+  const sys = d.system
+  const resourceHtml = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      ${[
+        { label: 'CPU', pct: sys.cpu.usagePct, sub: `${sys.cpu.usagePct}%` },
+        { label: 'RAM', pct: sys.ram.usedPct,  sub: `${sys.ram.usedGb}/${sys.ram.totalGb}GB` },
+        { label: 'Disk', pct: sys.disk.usedPct, sub: `${sys.disk.usedGb}/${sys.disk.totalGb}GB` },
+      ].map(r => `
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+          <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted)">${r.label}</div>
+          <div style="font-size:13px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:${r.pct>90?'#ef4444':r.pct>70?'#f59e0b':'var(--text)'}">${r.pct}%</div>
+          <div style="font-size:9px;color:var(--muted2);font-family:'IBM Plex Mono',monospace">${r.sub}</div>
+          ${bar(r.pct)}
+        </div>`).join('')}
+    </div>`
+
+  // Containers
+  const stateColor = { running:'#10b981', restarting:'#f59e0b', paused:'#6366f1', exited:'#ef4444', dead:'#ef4444', other:'var(--muted)' }
+  const stateIcon  = { running:'●', restarting:'↻', paused:'⏸', exited:'■', dead:'✕', other:'?' }
+  const neoFirst   = [...d.containers].sort((a,b) => a.name.startsWith('neo') ? -1 : b.name.startsWith('neo') ? 1 : 0)
+  const containerHtml = neoFirst.slice(0, 20).map(c => `
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);font-size:10px;font-family:'IBM Plex Mono',monospace">
+      <span style="color:${stateColor[c.state]};font-size:12px;flex-shrink:0">${stateIcon[c.state]}</span>
+      <span style="color:var(--text);min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+      <span style="color:var(--muted2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.image}</span>
+      <span style="color:${stateColor[c.state]};flex-shrink:0">${c.status.slice(0,20)}</span>
+    </div>`).join('')
+
+  // Services
+  const svcs = d.services
+  const svcRows = [
+    { label: 'Database',   ok: svcs.database.ok, detail: svcs.database.ok ? `${svcs.database.latencyMs}ms` : svcs.database.error },
+    { label: 'Telegram',   ok: svcs.telegram.ok, detail: svcs.telegram.ok ? `@${svcs.telegram.username}` : svcs.telegram.error },
+    { label: 'Ollama',     ok: svcs.ollama.ok,   detail: svcs.ollama.ok   ? svcs.ollama.models?.join(', ') : svcs.ollama.error },
+    { label: 'DeepSeek',   ok: svcs.deepseek.ok, detail: svcs.deepseek.ok && svcs.deepseek.balance != null ? `$${svcs.deepseek.balance?.toFixed(2)} balance` : svcs.deepseek.error },
+  ].map(s => `
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:10px;font-family:'IBM Plex Mono',monospace">
+      <span style="color:${s.ok?'#10b981':'#ef4444'}">${s.ok?'✅':'❌'}</span>
+      <span style="color:var(--text);min-width:70px">${s.label}</span>
+      <span style="color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.detail ?? ''}</span>
+    </div>`).join('')
+
+  // Issues
+  const issuesHtml = d.issues.length === 0
+    ? '<div style="color:#10b981;font-size:11px;font-family:\'IBM Plex Mono\',monospace">✅ ไม่พบปัญหา</div>'
+    : d.issues.map(i => `
+        <div style="display:flex;gap:8px;padding:5px 8px;border-radius:6px;margin-bottom:4px;background:${i.severity==='critical'?'rgba(239,68,68,0.08)':'rgba(245,158,11,0.08)'}">
+          <span>${i.severity==='critical'?'🚨':'⚠️'}</span>
+          <div>
+            <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:${i.severity==='critical'?'#ef4444':'#f59e0b'}">${i.component}</div>
+            <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted)">${i.message}</div>
+          </div>
+        </div>`).join('')
+
+  const analyzeBtn = d.issues.length > 0 ? `
+    <button id="analyze-btn" onclick="analyzeIssues()"
+      style="width:100%;margin-top:10px;padding:8px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;border-radius:8px;color:#fff;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;font-weight:600">
+      🤖 AI แนะนำวิธีแก้
+    </button>
+    <div id="fixes-box" style="margin-top:10px"></div>` : ''
+
+  const ts = new Date(d.timestamp).toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+  return `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px;background:var(--s2);border:1px solid ${overallColor}33;border-radius:10px">
+      <span style="font-size:20px">${overallIcon}</span>
+      <div>
+        <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:${overallColor}">${overallLabel.toUpperCase()}</div>
+        <div style="font-size:10px;color:var(--muted2);font-family:'IBM Plex Mono',monospace">อัพเดท ${ts} · refresh ทุก 30s</div>
+      </div>
+    </div>
+    <div class="usage-section-title">RESOURCES</div>
+    ${resourceHtml}
+    <div class="usage-section-title">CONTAINERS (${d.containers.length})</div>
+    ${containerHtml}
+    <div class="usage-section-title" style="margin-top:10px">SERVICES</div>
+    ${svcRows}
+    <div class="usage-section-title" style="margin-top:10px">ISSUES (${d.issues.length})</div>
+    ${issuesHtml}
+    ${analyzeBtn}`
 }
 </script>
 

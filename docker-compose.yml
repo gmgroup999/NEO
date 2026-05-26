@@ -23,6 +23,8 @@ services:
       - NEO_TELEGRAM_CHAT_ID=${NEO_TELEGRAM_CHAT_ID:-}
     ports:
       - "3200:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - supabase_default
 
