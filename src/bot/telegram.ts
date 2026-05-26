@@ -10,6 +10,27 @@ import { randomUUID } from 'crypto'
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!)
 
+// ─── Chat ID Whitelist ───
+const _allowedIds: Set<bigint> = new Set(
+  (process.env.NEO_TELEGRAM_CHAT_ID ?? '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(s => BigInt(s))
+)
+
+function isAllowed(ctx: any): boolean {
+  if (_allowedIds.size === 0) return true  // ไม่ set = dev mode อนุญาตทุกคน
+  const id = ctx.chat?.id ?? ctx.from?.id
+  return id != null && _allowedIds.has(BigInt(id))
+}
+
+bot.use(async (ctx, next) => {
+  if (isAllowed(ctx)) return next()
+  console.warn(`[telegram] blocked unauthorized id: ${ctx.chat?.id ?? ctx.from?.id}`)
+  await (ctx as any).reply?.('⛔ Unauthorized').catch(() => {})
+})
+
 const sessions  = new Map<string, { id: string; messages: any[] }>()
 const voiceMode = new Map<string, { enabled: boolean; voiceId: string; voiceName: string }>()
 
