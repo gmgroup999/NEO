@@ -1104,7 +1104,7 @@ app.post('/api/deploy', async (req, reply) => {
   })
 
   const domain = process.env.NEO_DOMAIN ?? 'localhost'
-  const cmd = `cd ~/NEO-OS && git pull origin master && docker compose build --no-cache neo && docker compose up -d neo`
+  const cmd = `cd ~/neo && git pull origin master && docker compose build --no-cache neo && docker compose up -d neo`
   const msg = `🚀 NEO Deploy Request\n${note ? `Note: ${note}\n` : ''}\nเวลา: ${now.toLocaleString('th-TH')}\n\nรัน command:\n\`\`\`\n${cmd}\n\`\`\``
 
   const { tgNotify } = await import('../core/cron')

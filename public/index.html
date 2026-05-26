@@ -895,18 +895,26 @@ kbd {
 
 /* ── USAGE PANEL ── */
 .usage-panel {
-  display: none;
+  display: flex;
+  flex-direction: column;
   position: fixed;
   top: 0; right: 0;
   width: 360px;
   height: 100vh;
   background: var(--s1);
-  border-left: 1px solid var(--border);
-  z-index: 100;
-  flex-direction: column;
+  border-left: 1px solid rgba(0,229,255,0.15);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.5);
+  z-index: 200;
   overflow: hidden;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  visibility: hidden;
 }
-.usage-panel.open { display: flex; }
+.usage-panel.open {
+  transform: translateX(0);
+  visibility: visible;
+}
+#crons-panel { width: 520px; }
 
 .usage-header {
   display: flex;
@@ -1292,7 +1300,6 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
 }
 .voice-row:hover { background: rgba(255,255,255,0.04); }
 .voice-row.voice-selected { background: rgba(0,229,255,0.07); border: 1px solid rgba(0,229,255,0.15); }
-}
 
 @keyframes tts-pulse {
   0%,100% { opacity: 1; }
@@ -3251,6 +3258,9 @@ function renderUsage(d, balances = {}) {
   </div>
 </div>
 
+<!-- Panel Backdrop -->
+<div id="panel-backdrop" onclick="closeAllPanels()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:199;backdrop-filter:blur(1px)"></div>
+
 <!-- System Health Panel -->
 <div class="usage-panel" id="system-panel">
   <div class="usage-header">
@@ -3263,7 +3273,7 @@ function renderUsage(d, balances = {}) {
 </div>
 
 <!-- Cron Jobs Panel -->
-<div class="usage-panel" id="crons-panel" style="display:none;width:520px">
+<div class="usage-panel" id="crons-panel">
   <div class="usage-header">
     <span>⏰ CRON JOBS</span>
     <div style="display:flex;gap:6px;align-items:center">
@@ -4162,9 +4172,15 @@ let editingCronId = null
 function toggleCrons() {
   cronsOpen = !cronsOpen
   const panel = document.getElementById('crons-panel')
-  panel.style.display = cronsOpen ? 'flex' : 'none'
-  panel.style.flexDirection = 'column'
-  if (cronsOpen) loadCronJobs()
+  if (cronsOpen) {
+    closeAllPanelsExcept('crons')
+    panel.classList.add('open')
+    document.getElementById('panel-backdrop').style.display = 'block'
+    loadCronJobs()
+  } else {
+    panel.classList.remove('open')
+    document.getElementById('panel-backdrop').style.display = 'none'
+  }
 }
 
 async function requestDeploy() {
@@ -4174,14 +4190,17 @@ async function requestDeploy() {
     const r = await fetch('/api/deploy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note: 'web UI' }) })
     const data = await r.json()
     if (data.ok) {
-      showCostAlert && (() => {})()
       const toast = document.createElement('div')
-      toast.style.cssText = 'position:fixed;bottom:90px;right:20px;background:#0d1a0d;border:1px solid rgba(16,185,129,0.4);border-radius:10px;padding:12px 16px;z-index:999;font-family:"IBM Plex Mono",monospace;font-size:11px;color:#dde1f0;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,0.5);animation:fadeUp 0.2s ease'
-      toast.innerHTML = `<div style="color:#10b981;font-size:10px;letter-spacing:1px;margin-bottom:6px">🚀 DEPLOY REQUESTED</div><div style="color:#9292aa;font-size:10px;line-height:1.5">Telegram notification sent.<br>SSH in and confirm to deploy.</div>`
+      toast.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#0d1a0d;border:1px solid rgba(16,185,129,0.5);border-radius:12px;padding:20px 28px;z-index:9999;font-family:"IBM Plex Mono",monospace;font-size:12px;color:#dde1f0;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.7);animation:fadeUp 0.2s ease;min-width:280px'
+      toast.innerHTML = `<div style="font-size:28px;margin-bottom:10px">🚀</div><div style="color:#10b981;font-size:11px;letter-spacing:1.5px;margin-bottom:8px">DEPLOY REQUESTED</div><div style="color:#9292aa;font-size:11px;line-height:1.7">แจ้ง Telegram แล้ว<br>SSH เข้าไปยืนยันเพื่อ deploy</div><div style="margin-top:10px;background:rgba(0,0,0,0.3);border-radius:6px;padding:6px 10px;font-size:9px;color:#525270;word-break:break-all">${data.cmd}</div>`
       document.body.appendChild(toast)
-      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.4s'; setTimeout(() => toast.remove(), 400) }, 6000)
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500) }, 8000)
+    } else {
+      showToast('❌ Deploy ไม่สำเร็จ: ' + (data.error ?? 'unknown'))
     }
-  } catch {}
+  } catch (e) {
+    showToast('❌ Deploy error: ' + (e.message ?? 'network error'))
+  }
   if (btn) { btn.textContent = '🚀 Deploy'; btn.style.pointerEvents = '' }
 }
 
@@ -4524,14 +4543,30 @@ function toggleSystem() {
   systemOpen = !systemOpen
   const panel = document.getElementById('system-panel')
   if (systemOpen) {
+    closeAllPanelsExcept('system')
     panel.classList.add('open')
+    document.getElementById('panel-backdrop').style.display = 'block'
     loadSystem()
     systemTimer = setInterval(loadSystem, 30000)
   } else {
     panel.classList.remove('open')
     clearInterval(systemTimer)
+    document.getElementById('panel-backdrop').style.display = 'none'
   }
 }
+
+function closeAllPanels() {
+  if (systemOpen) { systemOpen = false; document.getElementById('system-panel').classList.remove('open'); clearInterval(systemTimer) }
+  if (cronsOpen)  { cronsOpen  = false; document.getElementById('crons-panel').classList.remove('open') }
+  document.getElementById('panel-backdrop').style.display = 'none'
+}
+
+function closeAllPanelsExcept(keep) {
+  if (keep !== 'system' && systemOpen) { systemOpen = false; document.getElementById('system-panel').classList.remove('open'); clearInterval(systemTimer) }
+  if (keep !== 'crons'  && cronsOpen)  { cronsOpen  = false; document.getElementById('crons-panel').classList.remove('open') }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllPanels() })
 
 async function loadSystem() {
   const body = document.getElementById('system-body')
