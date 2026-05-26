@@ -599,6 +599,39 @@ app.delete('/api/import-md', async (req, reply) => {
   return { deleted: result.rowCount, filename }
 })
 
+// ─── Cron Logs API ───
+app.get('/api/cron/logs', async () => {
+  const [logs, summary] = await Promise.all([
+    db.query(`
+      SELECT id, job_name, status, message, details, ran_at
+      FROM neo_cron_logs
+      ORDER BY ran_at DESC LIMIT 50
+    `).catch(() => ({ rows: [] as any[] })),
+    db.query(`
+      SELECT job_name, status, message, details, ran_at
+      FROM neo_cron_logs l1
+      WHERE ran_at = (
+        SELECT MAX(ran_at) FROM neo_cron_logs l2 WHERE l2.job_name = l1.job_name
+      )
+      ORDER BY job_name
+    `).catch(() => ({ rows: [] as any[] })),
+  ])
+  return { logs: logs.rows, lastRuns: summary.rows }
+})
+
+app.post('/api/cron/run/:job', async (req, reply) => {
+  const { job } = req.params as { job: string }
+  const { runDailyCostReport, runWeeklyMemoryCleanup, runMonthlySpendAlert } = await import('../core/cron')
+  const jobs: Record<string, () => Promise<void>> = {
+    'daily-cost-report':    runDailyCostReport,
+    'weekly-memory-cleanup': runWeeklyMemoryCleanup,
+    'monthly-spend-alert':  runMonthlySpendAlert,
+  }
+  if (!jobs[job]) return reply.status(404).send({ error: 'unknown job' })
+  jobs[job]().catch(console.error)
+  return { ok: true, job, triggered: new Date() }
+})
+
 // ─── SSE — Real-time push to Web UI ───
 app.get('/api/events', async (req, reply) => {
   reply.hijack()

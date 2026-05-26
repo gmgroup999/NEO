@@ -1645,6 +1645,7 @@ mark { background: rgba(0,229,255,0.2); color: var(--accent); border-radius: 2px
       <button onclick="toggleHistory()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">💬 History</button>
       <button onclick="toggleImport()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📚 Learn</button>
       <button onclick="toggleMemPanel()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">🧠 Memories</button>
+      <button onclick="toggleReports()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.12s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📊 Reports</button>
     </div>
   </div>
 
@@ -2579,6 +2580,17 @@ function renderUsage(d, balances = {}) {
   </div>
 </div>
 
+<!-- Reports Panel -->
+<div class="usage-panel" id="reports-panel">
+  <div class="usage-header">
+    <span>📊 CRON REPORTS</span>
+    <button class="usage-close" onclick="toggleReports()">✕</button>
+  </div>
+  <div class="usage-body" id="reports-body">
+    <div style="color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;padding:20px 0">Loading...</div>
+  </div>
+</div>
+
 <!-- Import Panel -->
 <div class="import-panel" id="import-panel">
   <div class="import-header">
@@ -3143,6 +3155,103 @@ async function deleteMem(id) {
   } catch (e) {
     alert('ลบไม่ได้: ' + e.message)
   }
+}
+</script>
+
+<script>
+// ─── Reports Panel ───
+let reportsOpen = false
+
+function toggleReports() {
+  reportsOpen = !reportsOpen
+  const panel = document.getElementById('reports-panel')
+  if (reportsOpen) { panel.classList.add('open'); loadReports() }
+  else panel.classList.remove('open')
+}
+
+async function loadReports() {
+  const body = document.getElementById('reports-body')
+  body.innerHTML = '<div style="color:var(--muted);font-size:11px;font-family:\'IBM Plex Mono\',monospace;padding:20px 0">Loading...</div>'
+  try {
+    const { logs, lastRuns } = await fetch('/api/cron/logs').then(r => r.json())
+    body.innerHTML = renderReports(logs, lastRuns)
+  } catch (e) {
+    body.innerHTML = '<div style="color:#ef4444;font-size:11px">โหลดไม่ได้</div>'
+  }
+}
+
+async function triggerCron(job) {
+  const btn = document.getElementById('btn-' + job)
+  btn.textContent = '⏳'
+  btn.disabled = true
+  try {
+    await fetch(`/api/cron/run/${job}`, { method: 'POST' })
+    setTimeout(() => loadReports(), 2000)
+  } catch {}
+  setTimeout(() => { btn.textContent = '▶ Run Now'; btn.disabled = false }, 3000)
+}
+
+function renderReports(logs, lastRuns) {
+  const jobs = [
+    { key: 'daily-cost-report',    label: 'Daily Cost Report',    schedule: 'ทุกวัน 06:00',         icon: '📊', color: '#00e5ff' },
+    { key: 'weekly-memory-cleanup', label: 'Weekly Memory Cleanup', schedule: 'ทุกวันจันทร์ 02:00',  icon: '🧹', color: '#10b981' },
+    { key: 'monthly-spend-alert',  label: 'Monthly Spend Alert',  schedule: 'ทุกวัน 08:00',         icon: '💰', color: '#f59e0b' },
+  ]
+
+  const byJob = {}
+  lastRuns.forEach(r => { byJob[r.job_name] = r })
+
+  const statusIcon = s => s === 'success' ? '✅' : s === 'error' ? '❌' : '⏭'
+  const fmtTime = d => d ? new Date(d).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+
+  const jobCards = jobs.map(j => {
+    const last = byJob[j.key]
+    const statusHtml = last
+      ? `<span style="color:${last.status === 'success' ? '#10b981' : last.status === 'error' ? '#ef4444' : 'var(--muted)'}">${statusIcon(last.status)} ${last.status}</span>`
+      : `<span style="color:var(--muted2)">ยังไม่เคยรัน</span>`
+    const msgHtml = last?.message
+      ? `<div style="color:var(--muted);font-size:10px;margin-top:5px;line-height:1.5;max-height:48px;overflow:hidden">${last.message.slice(0, 120)}</div>`
+      : ''
+    return `
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:14px">${j.icon}</span>
+          <span style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:${j.color};font-weight:600">${j.label}</span>
+          <span style="flex:1"></span>
+          <button id="btn-${j.key}" onclick="triggerCron('${j.key}')"
+            style="background:var(--s3);border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:2px 8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer">
+            ▶ Run Now
+          </button>
+        </div>
+        <div style="display:flex;gap:16px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted)">
+          <span>🕐 ${j.schedule}</span>
+          <span>${statusHtml}</span>
+          <span style="color:var(--muted2)">last: ${fmtTime(last?.ran_at)}</span>
+        </div>
+        ${msgHtml}
+      </div>`
+  }).join('')
+
+  const recentHtml = logs.length === 0
+    ? '<div style="color:var(--muted2);font-size:11px">ยังไม่มี logs</div>'
+    : logs.slice(0, 20).map(r => {
+        const icon = statusIcon(r.status)
+        const color = r.status === 'success' ? '#10b981' : r.status === 'error' ? '#ef4444' : 'var(--muted2)'
+        const name = { 'daily-cost-report': '📊 Daily Cost', 'weekly-memory-cleanup': '🧹 Memory', 'monthly-spend-alert': '💰 Alert' }[r.job_name] ?? r.job_name
+        return `
+          <div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:10px;font-family:'IBM Plex Mono',monospace;align-items:flex-start">
+            <span style="color:${color};flex-shrink:0">${icon}</span>
+            <span style="color:var(--muted2);flex-shrink:0;min-width:100px">${fmtTime(r.ran_at)}</span>
+            <span style="color:var(--muted);flex-shrink:0;min-width:80px">${name}</span>
+            <span style="color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(r.message ?? '').slice(0, 80)}</span>
+          </div>`
+      }).join('')
+
+  return `
+    <div class="usage-section-title">SCHEDULED JOBS</div>
+    ${jobCards}
+    <div class="usage-section-title" style="margin-top:6px">RECENT ACTIVITY</div>
+    ${recentHtml}`
 }
 </script>
 

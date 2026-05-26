@@ -19,6 +19,8 @@ services:
       - NEO_DOMAIN=neo.z-node.cc
       - NEO_PASSWORD=${NEO_PASSWORD}
       - NEO_SESSION_SECRET=${NEO_SESSION_SECRET}
+      - NEO_MONTHLY_BUDGET=${NEO_MONTHLY_BUDGET:-10}
+      - NEO_TELEGRAM_CHAT_ID=${NEO_TELEGRAM_CHAT_ID:-}
     ports:
       - "3200:3000"
     networks:
