@@ -605,6 +605,69 @@ app.get('/api/health', async () => {
   return collectHealth()
 })
 
+app.post('/api/health/action', async (req, reply) => {
+  const { action, target } = req.body as { action: string; target?: string }
+  const http = await import('http')
+
+  function dockerCall(method: string, path: string, body?: object): Promise<{ status: number; data: any }> {
+    return new Promise((resolve) => {
+      const bodyStr = body ? JSON.stringify(body) : ''
+      const opts: any = {
+        socketPath: '/var/run/docker.sock',
+        path, method,
+        headers: body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bodyStr) } : {},
+      }
+      const req2 = http.default.request(opts, (res) => {
+        let data = ''
+        res.on('data', c => data += c)
+        res.on('end', () => { try { resolve({ status: res.statusCode ?? 0, data: JSON.parse(data) }) } catch { resolve({ status: res.statusCode ?? 0, data }) } })
+      })
+      req2.on('error', (e) => resolve({ status: 500, data: e.message }))
+      if (bodyStr) req2.write(bodyStr)
+      req2.end()
+    })
+  }
+
+  try {
+    switch (action) {
+      case 'start-container': {
+        if (!target) return reply.status(400).send({ error: 'target required' })
+        const r = await dockerCall('POST', `/containers/${target}/start`)
+        return { ok: r.status === 204 || r.status === 304, action, target, status: r.status }
+      }
+      case 'restart-container': {
+        if (!target) return reply.status(400).send({ error: 'target required' })
+        const r = await dockerCall('POST', `/containers/${target}/restart?t=10`)
+        return { ok: r.status === 204, action, target, status: r.status }
+      }
+      case 'remove-container': {
+        if (!target) return reply.status(400).send({ error: 'target required' })
+        // หยุดก่อน (ถ้ายังรัน) แล้วค่อยลบ
+        await dockerCall('POST', `/containers/${target}/stop?t=5`)
+        const r = await dockerCall('DELETE', `/containers/${target}`)
+        return { ok: r.status === 204, action, target, status: r.status }
+      }
+      case 'cleanup-docker': {
+        // ลบ stopped containers + dangling images (ไม่แตะ running)
+        const [containers, images] = await Promise.all([
+          dockerCall('POST', '/containers/prune'),
+          dockerCall('POST', '/images/prune'),
+        ])
+        return {
+          ok: true, action,
+          deletedContainers: (containers.data as any)?.ContainersDeleted?.length ?? 0,
+          reclaimedBytes: (containers.data as any)?.SpaceReclaimed ?? 0,
+          deletedImages: (images.data as any)?.ImagesDeleted?.length ?? 0,
+        }
+      }
+      default:
+        return reply.status(400).send({ error: `unknown action: ${action}` })
+    }
+  } catch (err: any) {
+    return reply.status(500).send({ error: err.message })
+  }
+})
+
 app.post('/api/health/analyze', async (req) => {
   const { issues, containers, system } = req.body as any
   if (!issues?.length) return { fixes: [] }

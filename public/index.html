@@ -3297,6 +3297,33 @@ async function loadSystem() {
   }
 }
 
+async function fixAction(action, target, confirmMsg) {
+  if (confirmMsg && !confirm(confirmMsg)) return
+  const btn = event.target
+  const orig = btn.textContent
+  btn.textContent = '⏳'
+  btn.disabled = true
+  try {
+    const res = await fetch('/api/health/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, target }),
+    }).then(r => r.json())
+
+    if (res.ok || res.deletedContainers !== undefined) {
+      btn.textContent = '✅'
+      btn.style.background = '#10b981'
+      setTimeout(() => loadSystem(), 2500)
+    } else {
+      btn.textContent = '❌ ' + (res.error ?? 'failed')
+      btn.style.color = '#ef4444'
+    }
+  } catch (e) {
+    btn.textContent = '❌ error'
+  }
+  setTimeout(() => { btn.textContent = orig; btn.disabled = false; btn.style.background = ''; btn.style.color = '' }, 4000)
+}
+
 async function analyzeIssues() {
   if (!lastHealthData?.issues?.length) return
   const btn = document.getElementById('analyze-btn')
@@ -3348,12 +3375,26 @@ function renderSystem(d) {
   const stateColor = { running:'#10b981', restarting:'#f59e0b', paused:'#6366f1', exited:'#ef4444', dead:'#ef4444', other:'var(--muted)' }
   const stateIcon  = { running:'●', restarting:'↻', paused:'⏸', exited:'■', dead:'✕', other:'?' }
   const neoFirst   = [...d.containers].sort((a,b) => a.name.startsWith('neo') ? -1 : b.name.startsWith('neo') ? 1 : 0)
+
+  function containerActions(c) {
+    const s = `background:var(--s3);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:9px;font-family:'IBM Plex Mono',monospace;cursor:pointer;color:var(--muted)`
+    if (c.state === 'running')
+      return `<button style="${s}" onclick="fixAction('restart-container','${c.name}',null)">🔄</button>`
+    if (c.state === 'exited' || c.state === 'dead')
+      return `<button style="${s};color:#10b981" onclick="fixAction('start-container','${c.name}',null)">▶</button>
+              <button style="${s};color:#ef4444" onclick="fixAction('remove-container','${c.name}','ลบ container ${c.name}?')">🗑</button>`
+    if (c.state === 'restarting')
+      return `<button style="${s};color:#f59e0b" onclick="fixAction('restart-container','${c.name}',null)">⏹▶</button>`
+    return ''
+  }
+
   const containerHtml = neoFirst.slice(0, 20).map(c => `
     <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);font-size:10px;font-family:'IBM Plex Mono',monospace">
       <span style="color:${stateColor[c.state]};font-size:12px;flex-shrink:0">${stateIcon[c.state]}</span>
-      <span style="color:var(--text);min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+      <span style="color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
       <span style="color:var(--muted2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.image}</span>
-      <span style="color:${stateColor[c.state]};flex-shrink:0">${c.status.slice(0,20)}</span>
+      <span style="color:${stateColor[c.state]};flex-shrink:0;min-width:60px;text-align:right">${c.status.slice(0,16)}</span>
+      <span style="flex-shrink:0;display:flex;gap:3px">${containerActions(c)}</span>
     </div>`).join('')
 
   // Services
@@ -3382,7 +3423,31 @@ function renderSystem(d) {
           </div>
         </div>`).join('')
 
+  const btnStyle = `border:none;border-radius:5px;color:#fff;font-size:9px;font-family:'IBM Plex Mono',monospace;cursor:pointer;padding:2px 8px;font-weight:600`
+  const quickFixes = d.issues.filter(i =>
+    i.component.startsWith('Container:') && (i.message.includes('หยุดทำงาน') || i.message.includes('restart loop'))
+  ).map(i => {
+    const name = i.component.replace('Container: ', '')
+    if (i.message.includes('หยุดทำงาน'))
+      return `<div style="display:flex;gap:6px;margin-top:4px">
+        <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);line-height:22px">${name}:</span>
+        <button style="${btnStyle};background:#10b981" onclick="fixAction('start-container','${name}',null)">▶ Start</button>
+        <button style="${btnStyle};background:#ef4444" onclick="fixAction('remove-container','${name}','ลบ ${name}?')">🗑 Remove</button>
+      </div>`
+    return `<div style="display:flex;gap:6px;margin-top:4px">
+      <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);line-height:22px">${name}:</span>
+      <button style="${btnStyle};background:#f59e0b" onclick="fixAction('restart-container','${name}',null)">🔄 Force Restart</button>
+    </div>`
+  }).join('')
+
+  const hasDiskIssue = d.issues.some(i => i.component === 'Disk')
+  const cleanupBtn = hasDiskIssue
+    ? `<button style="${btnStyle};background:#6366f1;padding:4px 12px;margin-top:6px" onclick="fixAction('cleanup-docker',null,'ลบ stopped containers + dangling images?')">🧹 Docker Cleanup</button>`
+    : ''
+
   const analyzeBtn = d.issues.length > 0 ? `
+    ${quickFixes}
+    ${cleanupBtn}
     <button id="analyze-btn" onclick="analyzeIssues()"
       style="width:100%;margin-top:10px;padding:8px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;border-radius:8px;color:#fff;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;font-weight:600">
       🤖 AI แนะนำวิธีแก้
