@@ -128,14 +128,51 @@ async function runYoutubeSummary(job: CronJobRow) {
   }
 }
 
+// ─── SSRF guard ───
+// ป้องกัน web_scrape cron ถูกใช้เพื่อ probe internal network
+function isSafeUrl(urlStr: string): boolean {
+  try {
+    const u = new URL(urlStr)
+    // อนุญาตเฉพาะ http / https
+    if (!['http:', 'https:'].includes(u.protocol)) return false
+    const h = u.hostname.toLowerCase()
+    // Block localhost variants
+    if (h === 'localhost' || h === '0.0.0.0') return false
+    // Block metadata endpoints
+    if (h === 'metadata.google.internal' || h === '169.254.169.254') return false
+    // Block IPv6 loopback / link-local
+    if (h === '::1' || h.startsWith('fe80:') || h.startsWith('fc00:') || h.startsWith('fd')) return false
+    // Block private IPv4 ranges using regex
+    if (/^127\./.test(h)) return false                          // 127.0.0.0/8
+    if (/^10\./.test(h)) return false                           // 10.0.0.0/8
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false     // 172.16-31.x
+    if (/^192\.168\./.test(h)) return false                     // 192.168.x.x
+    if (/^0\./.test(h)) return false                            // 0.x.x.x
+    if (/^100\.6[4-9]\.|^100\.[7-9]\d\.|^100\.1[01]\d\.|^100\.12[0-7]\./.test(h)) return false // CGNAT 100.64/10
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function runWebScrape(job: CronJobRow) {
   const { urls = [], prompt = 'สรุปเนื้อหาจาก URLs เหล่านี้เป็นภาษาไทย' } = job.action_config ?? {}
   if (!urls.length) throw new Error('ไม่มี URLs ใน config')
 
+  // ตรวจ SSRF ทุก URL ก่อน fetch
+  const safeUrls = (urls as string[]).filter(u => {
+    if (!isSafeUrl(u)) {
+      console.warn(`[web_scrape] SSRF blocked: ${u}`)
+      return false
+    }
+    return true
+  })
+  if (!safeUrls.length) throw new Error('ทุก URL ถูก block เนื่องจาก SSRF policy (ห้าม fetch internal network)')
+
   const scraped = await Promise.all(
-    (urls as string[]).map(async url => {
+    safeUrls.map(async url => {
       try {
-        const res  = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': 'Mozilla/5.0' } })
+        const res  = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': 'Mozilla/5.0 NEO-Bot/1.0' } })
         const html = await res.text()
         const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 3000)
         return `URL: ${url}\n${text}`

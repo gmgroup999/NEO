@@ -1,7 +1,9 @@
 import { createHmac, timingSafeEqual } from 'crypto'
 import type { FastifyRequest, FastifyReply } from 'fastify'
 
-const SECRET  = process.env.NEO_SESSION_SECRET || 'neo-default-secret-change-me-in-production'
+// ถ้าไม่ set NEO_SESSION_SECRET → crash ที่ startup (ไม่ใช้ default อ่อนแอ)
+// ค่า placeholder นี้จะถูก replace ก่อน app.listen ด้วยการตรวจใน index.ts
+const SECRET  = process.env.NEO_SESSION_SECRET ?? 'UNSET'
 const PASSWORD = process.env.NEO_PASSWORD || ''
 const SESSION_SECS = 7 * 24 * 60 * 60  // 7 วัน
 

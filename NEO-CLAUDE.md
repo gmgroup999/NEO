@@ -717,3 +717,153 @@ ssh -i ~/.ssh/neo_key jack@195.201.81.33 "cd ~/neo && git pull origin master && 
 - SSH key: `~/.ssh/neo_key` — deploy จาก Claude Code เท่านั้น
 - API keys ห้าม paste ใน chat
 - `.env` ห้าม commit ลง git
+
+---
+
+### 2026-05-26 (ต่อ) — Web UI Panel Fix · Deploy Path Fix · Chat UI Markdown
+
+#### สิ่งที่ทำไปแล้ว
+
+**1. Fix Web UI Panels: System / Crons / Deploy** (`public/index.html`, `src/web/server.ts`)
+
+ปัญหา: กดปุ่ม System, Crons, Deploy แล้วไม่มีอะไรเกิดขึ้น (หน้าจอดำ/ว่าง)
+
+Root cause:
+- `crons-panel` ใช้ `style.display = 'flex'/'none'` ขณะที่ `system-panel` ใช้ `classList.add('open')` — inconsistent
+- Panel background `#080810` เกือบเหมือนกับ page background `#04040a` มองไม่เห็นเมื่อ panel เปิด
+- ไม่มี animation / backdrop ทำให้ไม่รู้ว่า panel เปิดอยู่
+- Stray CSS `}` (บรรทัด 1295) หลัง `.voice-row.voice-selected` ทำให้ CSS parse ผิด
+- Deploy command ใช้ `cd ~/NEO-OS` ซึ่งไม่มีบน VPS จริง (path จริงคือ `~/neo`)
+
+การแก้:
+- ลบ stray CSS `}` ที่ล้นออกมา
+- เปลี่ยน panel CSS: `display:none/flex` → `transform: translateX(100%)` slide-in animation 0.25s
+- เพิ่ม `z-index: 200`, `border-left`, `box-shadow` ให้ panel ดูชัดเจน
+- เพิ่ม `#panel-backdrop` (z-index: 199) — กด backdrop = ปิด panel ทั้งหมด
+- `toggleCrons()` เปลี่ยนเป็น `classList.add/remove('open')` ให้ตรงกับ `toggleSystem()`
+- เพิ่ม `closeAllPanels()`, `closeAllPanelsExcept(keep)` — System/Crons ปิดกัน
+- Escape key ปิด panel ทั้งหมด
+- `requestDeploy()`: toast จาก bottom-right → center-screen modal (8 วินาที) + error handling
+- `server.ts`: แก้ `cd ~/NEO-OS` → `cd ~/neo`
+
+**2. Markdown Rendering ใน Chat UI** (`public/index.html`, commit `9af9455`)
+- Link `[text](url)` → `<a href target=_blank>`
+- Table `| col |` → `<table>`
+- Code block → `<pre><code>`, Inline code → `<code>`, Bold → `<strong>`
+- ปกป้อง XSS ด้วย `escapeHtml()` ก่อน render
+
+**3. Complete AI Fleet ใน System Prompt** (`src/core/memory.ts`, commit `87df668`)
+- System prompt แสดงโมเดลทุกตัวที่พร้อมใช้ (Hermes, Claude Sonnet/Opus/Haiku, GPT-4.1, Gemini, DeepSeek, gpt-image-1, Gemini Flash Image)
+
+**4. Fuzzy @mention + Tone-insensitive Image Trigger** (commit `e015ea1`)
+- `@neo` match แม้ botUsername ผิด case
+- `@claude3.5`, `@claude-4` → map ไป claude
+- Image trigger รองรับ `วาด`, `สร้างภาพ`, `generate image`, `draw`, `create image`, `paint` (สระเต็มและไม่เต็ม)
+
+**5. Content Moderation Error Handling** (`src/bot/telegram.ts`, commits `ce0ca7b` / `52e66f4`)
+- จับ HTTP 400 + `content_policy_violation` จาก OpenAI → reply ข้อความชัดเจน
+- `logAICall` non-blocking สำหรับ image requests (ไม่ throw 500 อีกต่อไป)
+
+#### ไฟล์ที่แก้ไข
+| ไฟล์ | การเปลี่ยนแปลง |
+|---|---|
+| `public/index.html` | CSS slide-in panel animation, backdrop, Escape key, requestDeploy center modal, markdown rendering |
+| `src/web/server.ts` | deploy command path `~/NEO-OS` → `~/neo` |
+| `src/core/memory.ts` | Complete AI fleet ใน system prompt |
+| `src/core/router.ts` | Fuzzy @mention matching |
+| `src/bot/telegram.ts` | Tone-insensitive image trigger, content moderation error, non-blocking logAICall |
+
+#### Commits
+| Commit | เนื้อหา |
+|---|---|
+| `1b9ac74` | fix: System/Crons/Deploy panels + deploy path |
+| `9af9455` | feat: markdown rendering ใน chat UI |
+| `87df668` | feat: complete AI fleet ใน system prompt |
+| `e015ea1` | feat: fuzzy @mention + tone-insensitive image trigger |
+| `ce0ca7b` | feat: content moderation error message |
+| `52e66f4` | fix: logAICall non-blocking for image requests |
+
+#### ⚠️ งานที่ค้างอยู่ / TODO ถัดไป
+
+**CRITICAL — ต้องทำบน VPS (ไม่ใช่ code):**
+- **ตั้ง `NEO_TELEGRAM_CHAT_ID` ใน VPS `.env`** — whitelist code deploy แล้วแต่ยัง "dev mode" (ยอมรับทุกคน)
+  - Jack ต้อง message `@userinfobot` บน Telegram เพื่อรับ numeric ID
+  - แล้วรัน: `ssh -i ~/.ssh/neo_key jack@195.201.81.33 "echo 'NEO_TELEGRAM_CHAT_ID=YOUR_ID' >> ~/neo/.env && cd ~/neo && docker compose up -d neo"`
+  - ไม่ต้อง rebuild — แค่ restart container
+
+**Feature Backlog:**
+- ทดสอบ YouTube summary cron กับ channel จริง
+- Cron logs real-time panel ทดสอบ end-to-end
+
+---
+
+### 2026-05-27 — Security Hardening
+
+#### สิ่งที่ทำไปแล้ว
+
+**1. SSRF Protection** (`src/core/cron-manager.ts`)
+- เพิ่ม `isSafeUrl()` ก่อน fetch ใน `runWebScrape()`
+- Block: private IPv4 (10.x, 172.16-31.x, 192.168.x), loopback (127.x, localhost), link-local (169.254.x — AWS metadata), CGNAT (100.64/10), IPv6 private (::1, fe80:, fc00:, fd*)
+- Block protocols ที่ไม่ใช่ http/https
+- URLs ที่ถูก block → warn log + skip (ถ้าทุก URL blocked → throw error)
+
+**2. Session Secret Fail-Hard** (`src/index.ts`, `src/web/auth.ts`)
+- `validateEnv()` รันก่อน `main()` — ตรวจ `NEO_SESSION_SECRET` (ต้องมี + ยาว ≥ 32 chars) และ `NEO_PASSWORD`
+- ถ้าไม่ครบ → พิมพ์ error ชัดเจน + `process.exit(1)`
+- `auth.ts`: ลบ `|| 'neo-default-secret-change-me-in-production'` fallback ออก
+
+**3. Rate Limiting** (`src/web/server.ts`)
+- `checkRateLimit(ip)` — in-memory rate limiter, sliding window 1 นาที
+- Default: 30 req/min/IP (ปรับได้ด้วย env var `RATE_LIMIT_PER_MIN`)
+- ครอบ `/api/chat/stream` เท่านั้น (endpoint ที่แพงที่สุด)
+- 429 response มี `Retry-After` header
+- Cleanup stale entries ทุก 5 นาที (ไม่ให้ Map โตเรื่อยๆ)
+
+**4. Security Headers** (`src/web/server.ts`)
+- `onSend` hook ครอบทุก response:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `X-XSS-Protection: 1; mode=block`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+  - `Content-Security-Policy`: default-src 'self', script/style 'unsafe-inline' (SPA), img data: blob: https:, media blob:, frame-ancestors 'none'
+
+**5. .env.example อัปเดต** (`neo-v2/neo/.env.example`)
+- เพิ่ม `NEO_TELEGRAM_CHAT_ID`, `RATE_LIMIT_PER_MIN`
+- เพิ่ม comment ว่า Auth vars จะทำให้ crash ถ้าไม่ set
+
+#### ไฟล์ที่แก้ไข
+| ไฟล์ | การเปลี่ยนแปลง |
+|---|---|
+| `src/core/cron-manager.ts` | เพิ่ม `isSafeUrl()` SSRF guard ก่อน fetch ใน `runWebScrape` |
+| `src/index.ts` | เพิ่ม `validateEnv()` fail-hard check ก่อน startup |
+| `src/web/auth.ts` | ลบ insecure default secret fallback |
+| `src/web/server.ts` | เพิ่ม security headers hook + rate limiter สำหรับ /api/chat/stream |
+| `neo-v2/neo/.env.example` | เพิ่ม env vars ใหม่ + docs |
+
+#### Environment Variables ที่เพิ่ม
+```env
+NEO_TELEGRAM_CHAT_ID=123456789   # Numeric ID จาก @userinfobot
+RATE_LIMIT_PER_MIN=30             # Rate limit สำหรับ /api/chat/stream (default 30)
+```
+
+#### ⚠️ VPS Action Required หลัง deploy
+```bash
+# ตรวจสอบ NEO_SESSION_SECRET มีใน .env ก่อน deploy
+# ถ้าไม่มี → NEO จะ crash ทันที!
+ssh -i ~/.ssh/neo_key jack@195.201.81.33 "grep NEO_SESSION_SECRET ~/neo/.env"
+
+# ถ้าไม่มี → เพิ่มก่อน
+ssh -i ~/.ssh/neo_key jack@195.201.81.33 \
+  "echo \"NEO_SESSION_SECRET=$(openssl rand -hex 32)\" >> ~/neo/.env"
+```
+
+#### Security Constraints (คงอยู่ทุก session)
+- SSH key: `~/.ssh/neo_key` — deploy จาก Claude Code เท่านั้น
+- API keys ห้าม paste ใน chat
+- `.env` ห้าม commit ลง git
+
+#### Security Constraints (คงอยู่ทุก session)
+- SSH key: `~/.ssh/neo_key` — deploy จาก Claude Code เท่านั้น
+- API keys ห้าม paste ใน chat
+- `.env` ห้าม commit ลง git

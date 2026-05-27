@@ -23,6 +23,32 @@ import {
 const app = Fastify({ logger: false, bodyLimit: 10 * 1024 * 1024 }) // 10MB
 app.register(multipart, { limits: { fileSize: 200 * 1024 * 1024 } }) // 200MB for video
 
+// ─── Security headers — ทุก response ───
+// CSP ใช้ 'unsafe-inline' เพราะ Web UI เป็น SPA ที่ใช้ inline scripts/styles
+// frame-ancestors 'none' ป้องกัน clickjacking
+app.addHook('onSend', (_req, reply, _payload, done) => {
+  reply.header('X-Content-Type-Options', 'nosniff')
+  reply.header('X-Frame-Options', 'DENY')
+  reply.header('X-XSS-Protection', '1; mode=block')
+  reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+  reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  reply.header(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",       // SPA ใช้ inline script
+      "style-src 'self' 'unsafe-inline'",         // SPA ใช้ inline style
+      "img-src 'self' data: blob: https:",        // รูปภาพจาก AI + data URI
+      "media-src 'self' blob:",                   // TTS audio blob
+      "connect-src 'self'",                       // SSE + API calls
+      "frame-ancestors 'none'",                   // ป้องกัน clickjacking
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  )
+  done()
+})
+
 // ─── Auth hook — ต้องอยู่ก่อน static plugin ───
 app.addHook('onRequest', requireAuth)
 
@@ -149,6 +175,38 @@ app.post('/api/chat', async (req, reply) => {
   }
 })
 
+// ─── Rate limiter — ป้องกัน /api/chat/stream cost blowup ───
+// Default: 30 requests per minute per IP (ปรับได้ด้วย RATE_LIMIT_PER_MIN)
+const _rateLimitWindow = 60_000 // 1 นาที
+const _rateLimitMax    = parseInt(process.env.RATE_LIMIT_PER_MIN ?? '30')
+const _rateStore       = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now()
+  const entry = _rateStore.get(ip)
+
+  if (!entry || now > entry.resetAt) {
+    _rateStore.set(ip, { count: 1, resetAt: now + _rateLimitWindow })
+    return { allowed: true }
+  }
+
+  if (entry.count >= _rateLimitMax) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000)
+    return { allowed: false, retryAfter }
+  }
+
+  entry.count++
+  return { allowed: true }
+}
+
+// Cleanup stale rate-limit entries ทุก 5 นาที (ไม่ให้ Map โต)
+setInterval(() => {
+  const now = Date.now()
+  for (const [ip, entry] of _rateStore) {
+    if (now > entry.resetAt) _rateStore.delete(ip)
+  }
+}, 5 * 60_000)
+
 // ─── Cost Alert — emit SSE when daily cost crosses threshold ───
 const _alertedDays = new Map<string, Set<number>>() // date → Set of alerted thresholds
 
@@ -172,6 +230,18 @@ async function checkCostAlert() {
 
 // ─── Chat Stream API — SSE token-by-token ───
 app.post('/api/chat/stream', async (req, reply) => {
+  // Rate limit — ตรวจก่อน hijack เพื่อส่ง 429 ปกติได้
+  const ip = req.headers['x-forwarded-for']?.toString().split(',')[0].trim()
+          ?? req.socket?.remoteAddress
+          ?? 'unknown'
+  const rl = checkRateLimit(ip)
+  if (!rl.allowed) {
+    return reply
+      .status(429)
+      .header('Retry-After', String(rl.retryAfter))
+      .send({ error: `Too many requests — รอ ${rl.retryAfter}s แล้วลองใหม่` })
+  }
+
   const { message, sessionId: sid = randomUUID(), history = [], imageBase64, imageMime, imageProvider, imageSize } = req.body as {
     message: string
     sessionId?: string

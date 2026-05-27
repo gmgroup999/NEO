@@ -6,7 +6,30 @@ import { seedJackProfile } from './core/seed'
 import { startMcpServer } from './mcp/server'
 import { startDynamicCron } from './core/cron-manager'
 
+// ─── Startup env validation — fail-hard ก่อนเริ่ม ───
+function validateEnv() {
+  const errors: string[] = []
+
+  if (!process.env.NEO_SESSION_SECRET) {
+    errors.push('NEO_SESSION_SECRET is not set — sessions will be insecure. Set a strong random string in .env')
+  } else if (process.env.NEO_SESSION_SECRET.length < 32) {
+    errors.push('NEO_SESSION_SECRET is too short (min 32 chars) — use: openssl rand -hex 32')
+  }
+
+  if (!process.env.NEO_PASSWORD) {
+    errors.push('NEO_PASSWORD is not set — Web UI will reject all logins')
+  }
+
+  if (errors.length > 0) {
+    console.error('\n❌ FATAL: NEO cannot start due to missing/invalid environment variables:\n')
+    errors.forEach(e => console.error(`  • ${e}`))
+    console.error('\nFix .env then restart NEO.\n')
+    process.exit(1)
+  }
+}
+
 async function main() {
+  validateEnv()
   console.log('🧠 NEO starting...')
 
   try {
