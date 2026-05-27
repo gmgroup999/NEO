@@ -895,6 +895,62 @@ ssh -i ~/.ssh/neo_key jack@195.201.81.33 \
 Hetzner server IP ถูก YouTube บล็อก RSS feed access
 - **Workaround**: ใช้ RSS digest สำหรับ news feeds ทั่วไปแทน หรือใช้ YouTube Data API v3
 
+---
+
+### 2026-05-27 (ต่อ) — Resilience: Backup + Healthcheck + SSE Fix
+
+#### สิ่งที่ทำไปแล้ว
+
+**1. DB Backup Nightly Cron** (`src/core/cron-manager.ts`, `Dockerfile`, `docker-compose.yml`)
+- `db_backup` action type ใหม่: `pg_dump` → `/backups/neo-db-YYYY-MM-DD.sql.gz`
+- `.env` backup: อ่านจาก `/mnt/home/neo/.env` → AES-256-CBC encrypt → `/backups/neo-env-backup.enc`
+  - Key = SHA-256 ของ `NEO_SESSION_SECRET`
+- Rotate: เก็บ 7 วัน ลบเก่ากว่านั้นอัตโนมัติ
+- Telegram notification หลัง backup สำเร็จ
+- Seed cron: `DB Backup Nightly` ทุกวัน `0 3 * * *` (ตี 3, Bangkok)
+- `Dockerfile`: เพิ่ม `apk add postgresql-client gzip`
+- `docker-compose.yml`: mount `/home/jack/neo-backups:/backups`
+- **ผลทดสอบ**: neo-db-2026-05-27.sql.gz (3.25 MB) + neo-env-backup.enc (1.1 KB) ✅
+
+**2. Docker Healthcheck** (`docker-compose.yml`, `src/web/auth.ts`)
+- `healthcheck`: node http.get `http://127.0.0.1:3000/api/health` ทุก 30s, timeout 10s, retries 3
+- `/api/health` เพิ่มใน `PUBLIC_PATHS` (ไม่ต้อง auth)
+- ถ้า unhealthy 3 ครั้งติด → Docker รู้ว่า container พัง (อาจตั้ง restart policy เพิ่มได้)
+- **ผลทดสอบ**: `Health: healthy` ✅
+
+**3. Startup Telegram Notification** (`src/index.ts`)
+- หลัง startup สำเร็จ → ส่ง Telegram: `🟢 NEO started` + เวลา + URL
+- ถ้า Telegram ล้ม → non-blocking ไม่ crash
+
+**4. SSE Memory Leak Fix** (`src/web/server.ts`)
+- `_sseConnections` Set ติดตาม active connections
+- Max 10 concurrent SSE connections → 503 ถ้าเต็ม
+- Auto-disconnect หลัง 2 ชั่วโมง (`setTimeout`)
+- `cleanup()` function ปลอดภัยจาก double-call
+- `try/catch` ในทุก `res.write()` ป้องกัน crash ถ้า client หายกลางทาง
+
+#### ไฟล์ที่แก้ไข
+| ไฟล์ | การเปลี่ยนแปลง |
+|---|---|
+| `Dockerfile` | เพิ่ม postgresql-client + gzip |
+| `docker-compose.yml` | healthcheck + /backups volume |
+| `src/core/cron-manager.ts` | db_backup action type ใหม่ |
+| `src/index.ts` | seed DB Backup Nightly + Telegram startup alert |
+| `src/web/auth.ts` | เพิ่ม /api/health ใน PUBLIC_PATHS |
+| `src/web/server.ts` | SSE max connections + auto-disconnect + cleanup |
+
+#### วิธี restore ถ้า DB เสียหาย
+```bash
+# 1. copy backup จาก VPS
+scp -i ~/.ssh/neo_key jack@195.201.81.33:~/neo-backups/neo-db-YYYY-MM-DD.sql.gz ./
+
+# 2. restore
+gunzip -c neo-db-YYYY-MM-DD.sql.gz | docker exec -i supabase-db psql -U postgres neo_db
+
+# 3. restore .env (ถ้าต้องการ)
+# decrypt ด้วย script (ต้องรู้ NEO_SESSION_SECRET เดิม)
+```
+
 #### Security Constraints (คงอยู่ทุก session)
 - SSH key: `~/.ssh/neo_key` — deploy จาก Claude Code เท่านั้น
 - API keys ห้าม paste ใน chat
