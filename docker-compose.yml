@@ -31,6 +31,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /opt:/mnt/opt:ro
       - /home/jack:/mnt/home:ro
+      - /home/jack/neo-backups:/backups   # DB backup + .env backup
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
     networks:
       - supabase_default
 

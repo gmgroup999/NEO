@@ -9,6 +9,8 @@ FROM node:20-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
+# pg_dump สำหรับ DB backup cron
+RUN apk add --no-cache postgresql-client gzip
 # Allow access to Docker socket (GID 110 = docker group on host)
 RUN addgroup -g 110 docker && adduser node docker
 COPY --from=builder /app/dist ./dist

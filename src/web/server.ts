@@ -1192,7 +1192,17 @@ app.post('/api/deploy', async (req, reply) => {
 })
 
 // ─── SSE — Real-time push to Web UI ───
+// ป้องกัน memory leak: จำกัด max connections + auto-disconnect หลัง 2 ชั่วโมง
+const SSE_MAX_CONNECTIONS = 10
+const SSE_MAX_AGE_MS      = 2 * 60 * 60 * 1000 // 2 ชั่วโมง
+const _sseConnections     = new Set<() => void>() // cleanup functions
+
 app.get('/api/events', async (req, reply) => {
+  // ถ้า connections เต็ม → reject ป้องกัน leak
+  if (_sseConnections.size >= SSE_MAX_CONNECTIONS) {
+    return reply.status(503).send({ error: 'Too many SSE connections' })
+  }
+
   reply.hijack()
   const res = reply.raw
   res.writeHead(200, {
@@ -1204,16 +1214,24 @@ app.get('/api/events', async (req, reply) => {
   res.flushHeaders()
 
   const send = (event: NeoEvent) => {
-    res.write(`data: ${JSON.stringify(event)}\n\n`)
+    try { res.write(`data: ${JSON.stringify(event)}\n\n`) } catch { /* client gone */ }
+  }
+
+  // Cleanup function — เรียกทั้งจาก close และ timeout
+  const cleanup = () => {
+    neoEvents.off('neo', send)
+    clearInterval(keepAlive)
+    clearTimeout(maxAgeTimer)
+    _sseConnections.delete(cleanup)
+    try { res.end() } catch { /* already ended */ }
   }
 
   neoEvents.on('neo', send)
-  const keepAlive = setInterval(() => res.write(': ping\n\n'), 25000)
+  const keepAlive   = setInterval(() => { try { res.write(': ping\n\n') } catch { cleanup() } }, 25_000)
+  const maxAgeTimer = setTimeout(() => cleanup(), SSE_MAX_AGE_MS) // auto-disconnect หลัง 2h
 
-  req.raw.on('close', () => {
-    neoEvents.off('neo', send)
-    clearInterval(keepAlive)
-  })
+  _sseConnections.add(cleanup)
+  req.raw.on('close', cleanup)
 })
 
 export function startWebServer(port = 3000) {

@@ -85,10 +85,33 @@ async function main() {
     await startMcpServer()
   }
 
+  // Seed DB backup cron (ทุกคืนตี 3, idempotent)
+  await db.query(`
+    INSERT INTO neo_cron_jobs (name, description, schedule, action_type, action_config, ai_model, enabled)
+    SELECT $1, $2, $3, $4, $5::jsonb, $6, $7
+    WHERE NOT EXISTS (SELECT 1 FROM neo_cron_jobs WHERE name = $1)
+  `, [
+    'DB Backup Nightly',
+    'pg_dump neo_db → /backups/neo-db-YYYY-MM-DD.sql.gz + .env backup (encrypted) — เก็บ 7 วัน',
+    '0 3 * * *',
+    'db_backup',
+    '{"keepDays": 7}',
+    'none',
+    true,
+  ]).catch(console.error)
+
   console.log('🚀 NEO is running')
   console.log('📱 Telegram: active')
   console.log(`🌐 Web UI: http://localhost:${process.env.PORT ?? 3000}`)
   if (process.env.NEO_MCP === '1') console.log('🔌 MCP Server: stdio')
+
+  // Startup Telegram notification
+  const { tgNotify } = await import('./core/cron')
+  tgNotify(
+    `🟢 *NEO started*\n` +
+    `🕐 ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}\n` +
+    `🌐 https://${process.env.NEO_DOMAIN ?? 'neo.z-node.cc'}`
+  ).catch(() => {}) // non-blocking, ไม่ throw ถ้า Telegram ล้ม
 }
 
 main().catch(console.error)

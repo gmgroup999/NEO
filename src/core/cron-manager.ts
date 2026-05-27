@@ -453,6 +453,58 @@ async function runCustomPrompt(job: CronJobRow) {
   return { status: 'success', message: content }
 }
 
+// ─── DB Backup ───
+
+async function runDbBackup(job: CronJobRow): Promise<{ status: string; message: string; details?: any }> {
+  const { keepDays = 7 } = job.action_config ?? {}
+  const { execSync } = await import('child_process')
+  const { statSync, readdirSync, unlinkSync, existsSync, mkdirSync } = await import('fs')
+
+  const BACKUP_DIR = '/backups'
+  if (!existsSync(BACKUP_DIR)) mkdirSync(BACKUP_DIR, { recursive: true })
+
+  const date = new Date().toISOString().slice(0, 10)
+  const dbFile  = `${BACKUP_DIR}/neo-db-${date}.sql.gz`
+  const envFile = `${BACKUP_DIR}/neo-env-backup.enc`
+
+  // ─── 1. DB dump ───
+  const dbUrl = process.env.DATABASE_URL
+  if (!dbUrl) throw new Error('DATABASE_URL ไม่ได้ set')
+
+  execSync(`pg_dump "${dbUrl}" | gzip > "${dbFile}"`, { shell: '/bin/sh', timeout: 60_000 })
+  const dbSizeMB = (statSync(dbFile).size / 1024 / 1024).toFixed(2)
+
+  // ─── 2. Rotate: ลบ backup เก่าเกิน keepDays ───
+  const files = readdirSync(BACKUP_DIR)
+    .filter(f => f.startsWith('neo-db-') && f.endsWith('.sql.gz'))
+    .sort()
+  const toDelete = files.slice(0, Math.max(0, files.length - keepDays))
+  toDelete.forEach(f => { try { unlinkSync(`${BACKUP_DIR}/${f}`) } catch {} })
+
+  // ─── 3. .env backup (encrypted with AES-256) ───
+  const { readFileSync, writeFileSync } = await import('fs')
+  const { createCipheriv, createHash, randomBytes } = await import('crypto')
+  const envPath = '/mnt/home/neo/.env'
+  let envBackupNote = ''
+  try {
+    const envContent = readFileSync(envPath)
+    // key = SHA-256 ของ NEO_SESSION_SECRET (32 bytes)
+    const key = createHash('sha256').update(process.env.NEO_SESSION_SECRET ?? 'neo-backup-key').digest()
+    const iv  = randomBytes(16)
+    const cipher = createCipheriv('aes-256-cbc', key, iv)
+    const encrypted = Buffer.concat([iv, cipher.update(envContent), cipher.final()])
+    writeFileSync(envFile, encrypted)
+    envBackupNote = ` | .env: ✅ (${statSync(envFile).size}B encrypted)`
+  } catch (e: any) {
+    envBackupNote = ` | .env: ⚠️ ${e.message}`
+  }
+
+  const remaining = readdirSync(BACKUP_DIR).filter(f => f.startsWith('neo-db-')).length
+  const msg = `💾 NEO DB Backup: ${date}\nSize: ${dbSizeMB} MB | Kept: ${remaining}/${keepDays}${envBackupNote}`
+  await tgNotify(msg)
+  return { status: 'success', message: msg, details: { dbFile, dbSizeMB, rotated: toDelete.length } }
+}
+
 // ─── Dispatch ───
 
 async function executeAction(job: CronJobRow): Promise<{ status: string; message: string; details?: any }> {
@@ -466,6 +518,7 @@ async function executeAction(job: CronJobRow): Promise<{ status: string; message
     case 'project_sync':      return runProjectSync(job)
     case 'rss_digest':        return runRssDigest(job)
     case 'memory_synthesis':  return runMemorySynthesis(job)
+    case 'db_backup':         return runDbBackup(job)
     default: throw new Error(`Unknown action type: ${job.action_type}`)
   }
 }
