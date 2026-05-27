@@ -2,5 +2,7 @@ node_modules/
 dist/
 .env
 *.env.local
-neo-v2/
+neo-v2/neo/node_modules/
+neo-v2/neo/dist/
+neo-v2/neo/.env
 old.md/
