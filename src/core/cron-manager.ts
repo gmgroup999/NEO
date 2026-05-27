@@ -1,4 +1,4 @@
-import cron from 'node-cron'
+import { schedule as cronSchedule, validate as cronValidate, type ScheduledTask } from 'node-cron'
 import { db } from '../db/client'
 import { tgNotify } from './cron'
 import { emitNeoEvent } from '../web/events'
@@ -15,7 +15,7 @@ interface CronJobRow {
 }
 
 // jobId → list of scheduled tasks (main + optional report)
-const activeTasks = new Map<string, cron.ScheduledTask[]>()
+const activeTasks = new Map<string, ScheduledTask[]>()
 
 // ─── DB helpers ───
 
@@ -532,21 +532,21 @@ async function scheduleJob(job: CronJobRow): Promise<void> {
 
   if (!job.enabled) return
 
-  if (!cron.validate(job.schedule)) {
+  if (!cronValidate(job.schedule)) {
     console.warn(`[cron] Invalid schedule for "${job.name}": ${job.schedule}`)
     return
   }
 
-  const tasks: cron.ScheduledTask[] = []
+  const tasks: ScheduledTask[] = []
 
   tasks.push(
-    cron.schedule(job.schedule, () => executeJobWithLogging(job.id), { timezone: 'Asia/Bangkok' })
+    cronSchedule(job.schedule, () => executeJobWithLogging(job.id), { timezone: 'Asia/Bangkok' })
   )
 
   const reportSchedule = job.action_config?.reportSchedule
-  if (reportSchedule && cron.validate(reportSchedule)) {
+  if (reportSchedule && cronValidate(reportSchedule)) {
     tasks.push(
-      cron.schedule(reportSchedule, () => sendStoredReport(job.id), { timezone: 'Asia/Bangkok' })
+      cronSchedule(reportSchedule, () => sendStoredReport(job.id), { timezone: 'Asia/Bangkok' })
     )
   }
 

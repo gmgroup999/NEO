@@ -232,7 +232,7 @@ async function checkCostAlert() {
 app.post('/api/chat/stream', async (req, reply) => {
   // Rate limit — ตรวจก่อน hijack เพื่อส่ง 429 ปกติได้
   const ip = req.headers['x-forwarded-for']?.toString().split(',')[0].trim()
-          ?? req.socket?.remoteAddress
+          ?? req.ip
           ?? 'unknown'
   const rl = checkRateLimit(ip)
   if (!rl.allowed) {
