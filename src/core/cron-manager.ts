@@ -472,9 +472,10 @@ async function executeAction(job: CronJobRow): Promise<{ status: string; message
 
 // ─── Execution with logging ───
 
-async function executeJobWithLogging(jobId: string): Promise<void> {
+async function executeJobWithLogging(jobId: string, opts: { forceRun?: boolean } = {}): Promise<void> {
   const job = await loadJob(jobId)
-  if (!job || !job.enabled) return
+  if (!job) return
+  if (!job.enabled && !opts.forceRun) return
 
   console.log(`[cron] ▶ ${job.name}`)
   emitNeoEvent({ type: 'cron_start', channel: 'system', data: { name: job.name, id: jobId }, timestamp: Date.now() })
@@ -578,7 +579,8 @@ export async function reloadJob(jobId: string): Promise<void> {
 }
 
 export async function runJobNow(jobId: string): Promise<void> {
-  return executeJobWithLogging(jobId)
+  // bypass enabled check — "run now" ต้องทำงานเสมอ ไม่ว่า job จะ enabled หรือไม่
+  return executeJobWithLogging(jobId, { forceRun: true })
 }
 
 export function getActiveJobCount(): number {
