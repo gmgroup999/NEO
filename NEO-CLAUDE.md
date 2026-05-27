@@ -863,6 +863,38 @@ ssh -i ~/.ssh/neo_key jack@195.201.81.33 \
 - API keys ห้าม paste ใน chat
 - `.env` ห้าม commit ลง git
 
+---
+
+### 2026-05-27 (ต่อ) — npm Vulnerabilities + Cron Testing
+
+#### สิ่งที่ทำไปแล้ว
+
+**1. npm Vulnerability Fix — 0 vuln**
+- fastify `4.27` → `5.8.5` (CVE: fast-uri path traversal, content-type bypass)
+- node-cron `3.0.3` → `4.2.1` (CVE: uuid buffer bounds)
+- @fastify/multipart `8` → `9` (Fastify v5 compat)
+- @fastify/static `7` → `9` (Fastify v5 compat + route-bypass CVE)
+- แก้ import `cron.ScheduledTask` → `ScheduledTask` (named export ใน node-cron v4)
+- แก้ rate limiter `req.socket` → `req.ip` (Fastify v5 API)
+
+**2. Bug fix: runJobNow bypass enabled check**
+- `executeJobWithLogging(jobId, { forceRun: true })` — "Run Now" ทำงานเสมอแม้ job จะ `enabled: false`
+
+**3. ผลการทดสอบ Cron Jobs**
+
+| Job | ผล | หมายเหตุ |
+|---|---|---|
+| **RSS Digest** | ✅ สมบูรณ์ | TechCrunch + AI News → DeepSeek summarize → ถูกต้อง |
+| **YouTube Summary** | ⚠️ Code ถูก, RSS 404 | Hetzner VPS IP ถูก YouTube บล็อก — ไม่ใช่ bug ใน code |
+| **Cron Logs SSE** | ✅ สมบูรณ์ | `cron_start` + `cron_done` emit ถูกต้อง |
+
+**4. YouTube RSS Workaround** (`src/ai/youtube.ts`)
+- Error message บอก user ชัดขึ้น: "Hetzner IP อาจถูกบล็อก" + link ให้ verify feed URL
+
+#### ⚠️ Known Issue: YouTube RSS จาก VPS
+Hetzner server IP ถูก YouTube บล็อก RSS feed access
+- **Workaround**: ใช้ RSS digest สำหรับ news feeds ทั่วไปแทน หรือใช้ YouTube Data API v3
+
 #### Security Constraints (คงอยู่ทุก session)
 - SSH key: `~/.ssh/neo_key` — deploy จาก Claude Code เท่านั้น
 - API keys ห้าม paste ใน chat
