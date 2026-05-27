@@ -8,7 +8,7 @@ const PASSWORD = process.env.NEO_PASSWORD || ''
 const SESSION_SECS = 7 * 24 * 60 * 60  // 7 วัน
 
 // Public paths ที่ไม่ต้องผ่าน auth
-const PUBLIC_PATHS = ['/login', '/login.html', '/api/auth/login', '/api/auth/logout']
+const PUBLIC_PATHS = ['/login', '/login.html', '/api/auth/login', '/api/auth/logout', '/api/health']
 
 export function checkPassword(input: string): boolean {
   if (!PASSWORD) {
