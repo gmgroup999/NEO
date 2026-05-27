@@ -65,7 +65,12 @@ export async function fetchChannelVideos(
       headers: { 'User-Agent': 'Mozilla/5.0' },
       signal: AbortSignal.timeout(12000),
     })
-    if (!res.ok) throw new Error(`RSS ${res.status} for channel ${channelId}`)
+    if (!res.ok) {
+      const hint = res.status === 404
+        ? `RSS 404 — channel ID อาจผิด หรือ YouTube บล็อก VPS IP (Hetzner ถูกบล็อกบ่อย) ลอง verify ที่: https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
+        : `RSS ${res.status} for channel ${channelId}`
+      throw new Error(hint)
+    }
 
     const xml = await res.text()
     const all = parseRSSFeed(xml, channelId)
